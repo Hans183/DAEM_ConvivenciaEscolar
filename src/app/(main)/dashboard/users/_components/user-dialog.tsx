@@ -123,6 +123,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
                 // Create new user
                 // Ensure verified is true as per requirement
                 payload.verified = true;
+                payload.emailVisibility = true;
                 // Password is required for new users
                 if (!data.password) {
                     form.setError("password", { message: "La contraseña es obligatoria para nuevos usuarios" });
