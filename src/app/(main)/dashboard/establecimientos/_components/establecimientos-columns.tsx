@@ -69,7 +69,7 @@ export const columns: ColumnDef<EstablecimientoActivation>[] = [
 
   /* RBD */
   {
-    accessorKey: "RBD",
+    accessorKey: "rbd",
     header: ({ column }) => (
       <Button
         variant="ghost"
@@ -79,7 +79,7 @@ export const columns: ColumnDef<EstablecimientoActivation>[] = [
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
-    cell: ({ row }) => <div>{row.getValue("RBD")}</div>,
+    cell: ({ row }) => <div>{row.getValue("rbd")}</div>,
   },
 
   /* Dirección */

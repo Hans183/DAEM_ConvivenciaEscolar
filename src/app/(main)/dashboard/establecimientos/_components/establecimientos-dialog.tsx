@@ -25,14 +25,14 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { pb } from "@/lib/pocketbase";
-import type { EstablecimientoActivation} from "./establecimientos-columns";
+import type { EstablecimientoActivation } from "./establecimientos-columns";
 
 const establecimientoFormSchema = z.object({
   nombre: z.string().min(1, {
     message: "El nombre es obligatorio.",
   }),
-  rbd: z.string().min(1, {
-    message: "El código es obligatorio.",
+  rbd: z.coerce.number().min(1, {
+    message: "El RBD es obligatorio.",
   }),
   direccion: z.string().min(1, {
     message: "La dirección es obligatoria.",
@@ -62,7 +62,7 @@ export function EstablecimientoDialog({
     resolver: zodResolver(establecimientoFormSchema),
     defaultValues: {
       nombre: "",
-      rbd: "",
+      rbd: 0,
       direccion: "",
     },
   });
@@ -71,13 +71,13 @@ export function EstablecimientoDialog({
     if (establecimiento) {
       form.reset({
         nombre: establecimiento.nombre,
-        rbd: String(establecimiento.rbd),
+        rbd: Number(establecimiento.rbd),
         direccion: establecimiento.direccion,
       });
     } else {
       form.reset({
         nombre: "",
-        rbd: "",
+        rbd: 0,
         direccion: "",
       });
     }
@@ -147,23 +147,23 @@ export function EstablecimientoDialog({
 
             {/* Código */}
             <FormField
-  control={form.control}
-  name="rbd" 
-  render={({ field }) => (
-    <FormItem>
-      <FormLabel>RBD</FormLabel>
-      <FormControl>
-        <Input 
-  type="number" 
-  {...field} 
-  value={field.value ?? ''} 
-  onChange={(e) => field.onChange(e.target.value)} 
-/>
-      </FormControl>
-      <FormMessage />
-    </FormItem>
-  )}
-/>
+              control={form.control}
+              name="rbd"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>RBD</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      {...field}
+                      value={field.value ?? ''}
+                      onChange={(e) => field.onChange(e.target.value)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
 
             {/* Dirección */}
