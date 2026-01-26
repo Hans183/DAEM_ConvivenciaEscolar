@@ -34,6 +34,7 @@ import {
 import { pb } from "@/lib/pocketbase";
 import type { ProtocolActivation } from "./columns";
 
+// Esquema de validación
 const protocolFormSchema = z.object({
     meses: z.string({
         required_error: "Por favor seleccione un mes.",
@@ -72,12 +73,12 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
     const [loading, setLoading] = useState(false);
     const [protocols, setProtocols] = useState<Protocol[]>([]);
 
+    // Cargar lista de protocolos
     useEffect(() => {
         const fetchProtocols = async () => {
             try {
-                // Removed sort to prevent 400 error if field doesn't exist
                 const records = await pb.collection("protocolos").getFullList();
-                console.log("Protocolos fetched:", records); // Debug: Check this in console to see correct field name
+                console.log("Protocolos fetched:", records);
                 setProtocols(records as unknown as Protocol[]);
             } catch (error) {
                 console.error("Failed to fetch protocols:", error);
@@ -87,7 +88,9 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
         fetchProtocols();
     }, []);
 
+    // Configurar formulario
     const form = useForm<ProtocolFormValues>({
+        // USO CORRECTO DE ZOD RESOLVER
         resolver: zodResolver(protocolFormSchema),
         defaultValues: {
             meses: "",
@@ -96,6 +99,7 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
         },
     });
 
+    // Resetear formulario cuando cambia el protocolo
     useEffect(() => {
         if (protocol) {
             form.reset({
@@ -112,6 +116,7 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
         }
     }, [protocol, form]);
 
+    // Enviar formulario
     const onSubmit = async (data: ProtocolFormValues) => {
         setLoading(true);
         try {
@@ -146,15 +151,21 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
                             : "Crea un nuevo registro de activación de protocolo."}
                     </DialogDescription>
                 </DialogHeader>
+                
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        {/* Campo Mes */}
                         <FormField
                             control={form.control}
                             name="meses"
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Mes</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                    <Select 
+                                        onValueChange={field.onChange} 
+                                        defaultValue={field.value} 
+                                        value={field.value}
+                                    >
                                         <FormControl>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Seleccione un mes" />
@@ -172,6 +183,8 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
                                 </FormItem>
                             )}
                         />
+                        
+                        {/* Campo Cantidad */}
                         <FormField
                             control={form.control}
                             name="cantidad"
@@ -179,19 +192,30 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
                                 <FormItem>
                                     <FormLabel>Cantidad</FormLabel>
                                     <FormControl>
-                                        <Input type="number" placeholder="0" {...field} />
+                                        <Input 
+                                            type="number" 
+                                            placeholder="0" 
+                                            {...field}
+                                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                        />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
+                        
+                        {/* Campo Protocolo */}
                         <FormField
                             control={form.control}
                             name="protocolo"
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Protocolo</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                    <Select 
+                                        onValueChange={field.onChange} 
+                                        defaultValue={field.value} 
+                                        value={field.value}
+                                    >
                                         <FormControl>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Seleccione un protocolo" />
@@ -209,7 +233,17 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
                                 </FormItem>
                             )}
                         />
+                        
+                        {/* Botones */}
                         <DialogFooter>
+                            <Button 
+                                type="button" 
+                                variant="outline" 
+                                onClick={() => onOpenChange(false)}
+                                disabled={loading}
+                            >
+                                Cancelar
+                            </Button>
                             <Button type="submit" disabled={loading}>
                                 {loading && <span className="mr-2 animate-spin">⏳</span>}
                                 {protocol ? "Guardar cambios" : "Crear registro"}
