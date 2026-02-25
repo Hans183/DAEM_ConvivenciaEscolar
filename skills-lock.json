@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "skills": {
+    "kpi-dashboard-design": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "cfa794da381bc10350be1a846859788d984717179bd317e3e7273ba9b211e493"
+    },
+    "nextjs-shadcn-builder": {
+      "source": "ovachiever/droid-tings",
+      "sourceType": "github",
+      "computedHash": "33a464c5e15b6732006f3bdaa96f976c1c13a11d7b4e361463cf703550c528fe"
+    },
+    "pocketbase-best-practices": {
+      "source": "greendesertsnow/pocketbase-skills",
+      "sourceType": "github",
+      "computedHash": "4df4b383b3df7a1e18f964b6330d43743a7305d94f6f00c0ad51742ccec83666"
+    },
+    "shadcn-ui": {
+      "source": "giuseppe-trisciuoglio/developer-kit",
+      "sourceType": "github",
+      "computedHash": "fc286bef24c7ed9f6d22410ee524b3a83cc38825fb06313d46b5b13a90454135"
+    }
+  }
+}

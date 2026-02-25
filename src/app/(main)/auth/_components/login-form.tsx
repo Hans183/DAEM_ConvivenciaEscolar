@@ -53,7 +53,7 @@ export function LoginForm() {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email Address</FormLabel>
+              <FormLabel>Correo Electrónico</FormLabel>
               <FormControl>
                 <Input id="email" type="email" placeholder="you@example.com" autoComplete="email" {...field} />
               </FormControl>
@@ -66,7 +66,7 @@ export function LoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel>Contraseña</FormLabel>
               <FormControl>
                 <Input
                   id="password"
@@ -94,7 +94,7 @@ export function LoginForm() {
                 />
               </FormControl>
               <FormLabel htmlFor="login-remember" className="ml-1 font-medium text-muted-foreground text-sm">
-                Remember me for 30 days
+                Recordarme por 30 días
               </FormLabel>
             </FormItem>
           )}

@@ -109,6 +109,8 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
                 name: data.name,
                 email: data.email,
                 role: data.role,
+                emailVisibility: true,
+                verified: true,
             };
 
             if (data.password) {
@@ -121,9 +123,6 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
                 toast.success("Usuario actualizado correctamente");
             } else {
                 // Create new user
-                // Ensure verified is true as per requirement
-                payload.verified = true;
-                payload.emailVisibility = true;
                 // Password is required for new users
                 if (!data.password) {
                     form.setError("password", { message: "La contraseña es obligatoria para nuevos usuarios" });
@@ -138,9 +137,16 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
             onSuccess();
             onOpenChange(false);
         } catch (error: any) {
-            console.error(error);
+            console.error("Full error object:", error);
+            console.error("Response data:", error.response?.data);
+
+            let errorMessage = error.message || "Por favor verifica los datos ingresados.";
+            if (error.response?.data) {
+                errorMessage = "Error PB: " + JSON.stringify(error.response.data);
+            }
+
             toast.error(user ? "Error al actualizar usuario" : "Error al crear usuario", {
-                description: error.message || "Por favor verifica los datos ingresados.",
+                description: errorMessage,
             });
         } finally {
             setLoading(false);

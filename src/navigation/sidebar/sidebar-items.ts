@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   type LucideIcon,
   Users,
+  School,
 } from "lucide-react";
 
 export interface NavSubItem {
@@ -46,6 +47,21 @@ export const sidebarItems: NavGroup[] = [
       {
         title: "Activación Protocolos",
         url: "/dashboard/activacion-protocolos",
+        icon: FileText,
+      },
+      {
+        title: "Registro DEC",
+        url: "/dashboard/dec",
+        icon: FileText,
+      },
+      {
+        title: "Establecimientos",
+        url: "/dashboard/establecimientos",
+        icon: School,
+      },
+      {
+        title: "Protocolos",
+        url: "/dashboard/protocolos",
         icon: FileText,
       },
     ],

@@ -1,5 +1,5 @@
 {
-  "name": "studio-admin",
+  "name": "convivencia_escolar",
   "version": "2.2.0",
   "private": true,
   "scripts": {
@@ -11,7 +11,7 @@
     "check": "biome check",
     "check:fix": "biome check --write",
     "prepare": "husky",
-    "generate:presets": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' src/scripts/generate-theme-presets.ts"
+    "generate:presets": "ts-node --compiler-options {\"module\":\"CommonJS\"} src/scripts/generate-theme-presets.ts"
   },
   "lint-staged": {
     "*.{js,ts,jsx,tsx}": [
@@ -24,6 +24,12 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^3.10.0",
+    "@radix-ui/react-collapsible": "^1.1.12",
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-popover": "^1.1.15",
+    "@radix-ui/react-select": "^2.2.6",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@radix-ui/react-tooltip": "^1.2.8",
     "@tanstack/react-query": "^5.90.16",
     "@tanstack/react-table": "^8.21.3",
     "axios": "^1.13.2",
