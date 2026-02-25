@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, Pencil, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -9,6 +9,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -23,7 +24,12 @@ export type EstablecimientoActivation = {
   updated: string;
 };
 
-export const columns: ColumnDef<EstablecimientoActivation>[] = [
+interface GetColumnsProps {
+  onEdit: (record: EstablecimientoActivation) => void;
+  onDelete: (record: EstablecimientoActivation) => void;
+}
+
+export const getColumns = ({ onEdit, onDelete }: GetColumnsProps): ColumnDef<EstablecimientoActivation>[] => [
   /* Select */
   {
     id: "select",
@@ -134,6 +140,18 @@ export const columns: ColumnDef<EstablecimientoActivation>[] = [
               onClick={() => navigator.clipboard.writeText(item.id)}
             >
               Copiar ID
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => onEdit(item)}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Editar
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onDelete(item)}
+              className="text-red-600 focus:text-red-600"
+            >
+              <Trash className="mr-2 h-4 w-4" />
+              Eliminar
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

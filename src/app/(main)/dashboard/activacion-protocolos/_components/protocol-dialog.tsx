@@ -6,7 +6,16 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { Check, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command";
 import {
     Dialog,
     DialogContent,
@@ -25,6 +34,11 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import {
     Select,
     SelectContent,
     SelectItem,
@@ -32,6 +46,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { pb } from "@/lib/pocketbase";
+import { cn } from "@/lib/utils";
 import type { ProtocolActivation } from "./columns";
 
 // Esquema de validación
@@ -72,17 +87,19 @@ type Protocol = {
 export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: ProtocolDialogProps) {
     const [loading, setLoading] = useState(false);
     const [protocols, setProtocols] = useState<Protocol[]>([]);
+    const [comboboxOpen, setComboboxOpen] = useState(false);
 
     // Cargar lista de protocolos
     useEffect(() => {
         const fetchProtocols = async () => {
             try {
                 const records = await pb.collection("protocolos").getFullList();
-                console.log("Protocolos fetched:", records);
                 setProtocols(records as unknown as Protocol[]);
-            } catch (error) {
-                console.error("Failed to fetch protocols:", error);
-                toast.error("Error al cargar lista de protocolos");
+            } catch (error: any) {
+                if (!error.isAbort) {
+                    console.error("Failed to fetch protocols:", error);
+                    toast.error("Error al cargar lista de protocolos");
+                }
             }
         };
         fetchProtocols();
@@ -142,7 +159,7 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[600px]">
                 <DialogHeader>
                     <DialogTitle>{protocol ? "Editar Registro" : "Agregar Registro"}</DialogTitle>
                     <DialogDescription>
@@ -151,7 +168,7 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
                             : "Crea un nuevo registro de activación de protocolo."}
                     </DialogDescription>
                 </DialogHeader>
-                
+
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                         {/* Campo Mes */}
@@ -161,9 +178,9 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Mes</FormLabel>
-                                    <Select 
-                                        onValueChange={field.onChange} 
-                                        defaultValue={field.value} 
+                                    <Select
+                                        onValueChange={field.onChange}
+                                        defaultValue={field.value}
                                         value={field.value}
                                     >
                                         <FormControl>
@@ -183,7 +200,7 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
                                 </FormItem>
                             )}
                         />
-                        
+
                         {/* Campo Cantidad */}
                         <FormField
                             control={form.control}
@@ -192,9 +209,9 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
                                 <FormItem>
                                     <FormLabel>Cantidad</FormLabel>
                                     <FormControl>
-                                        <Input 
-                                            type="number" 
-                                            placeholder="0" 
+                                        <Input
+                                            type="number"
+                                            placeholder="0"
                                             {...field}
                                             onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
                                         />
@@ -203,42 +220,80 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
                                 </FormItem>
                             )}
                         />
-                        
+
                         {/* Campo Protocolo */}
                         <FormField
                             control={form.control}
                             name="protocolo"
                             render={({ field }) => (
-                                <FormItem>
+                                <FormItem className="flex flex-col">
                                     <FormLabel>Protocolo</FormLabel>
-                                    <Select 
-                                        onValueChange={field.onChange} 
-                                        defaultValue={field.value} 
-                                        value={field.value}
-                                    >
-                                        <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Seleccione un protocolo" />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            {protocols.map((p) => (
-                                                <SelectItem key={p.id} value={p.id}>
-                                                    {p.item || p.nombre || p.name || p.id}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
+                                        <PopoverTrigger asChild>
+                                            <FormControl>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    aria-expanded={comboboxOpen}
+                                                    className={cn(
+                                                        "w-full justify-between",
+                                                        !field.value && "text-muted-foreground"
+                                                    )}
+                                                >
+                                                    {field.value
+                                                        ? (() => {
+                                                            const selected = protocols.find((p) => p.id === field.value);
+                                                            return selected ? (selected.item || selected.nombre || selected.name || selected.id) : "Protocolo no encontrado";
+                                                        })()
+                                                        : "Seleccione un protocolo"}
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </FormControl>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[550px] p-0" align="start">
+                                            <Command>
+                                                <CommandInput placeholder="Buscar protocolo..." />
+                                                <CommandList>
+                                                    <CommandEmpty>No se encontraron protocolos.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        {protocols.map((p) => {
+                                                            const displayValue = p.item || p.nombre || p.name || p.id;
+                                                            return (
+                                                                <CommandItem
+                                                                    value={displayValue}
+                                                                    key={p.id}
+                                                                    onSelect={() => {
+                                                                        form.setValue("protocolo", p.id);
+                                                                        setComboboxOpen(false);
+                                                                    }}
+                                                                >
+                                                                    <Check
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            p.id === field.value
+                                                                                ? "opacity-100"
+                                                                                : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {displayValue}
+                                                                </CommandItem>
+                                                            );
+                                                        })}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
-                        
+
                         {/* Botones */}
                         <DialogFooter>
-                            <Button 
-                                type="button" 
-                                variant="outline" 
+                            <Button
+                                type="button"
+                                variant="outline"
                                 onClick={() => onOpenChange(false)}
                                 disabled={loading}
                             >

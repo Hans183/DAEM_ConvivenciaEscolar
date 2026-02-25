@@ -74,15 +74,11 @@ export function NavUser({
                   Perfil
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <MessageSquareDot />
-                Notificaciones
-              </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => {
               pb.authStore.clear();
-              window.location.href = "/auth/v1/login";
+              window.location.href = "/auth/login";
             }}>
               <LogOut />
               Cerrar sesión

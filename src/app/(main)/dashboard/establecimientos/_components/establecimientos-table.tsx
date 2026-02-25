@@ -5,10 +5,11 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { pb } from "@/lib/pocketbase";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
-import { columns, type EstablecimientoActivation } from "./establecimientos-columns";
+import { getColumns, type EstablecimientoActivation } from "./establecimientos-columns";
 import { EstablecimientoDialog } from "./establecimientos-dialog";
 
 export function EstablecimientosTable() {
@@ -20,6 +21,26 @@ export function EstablecimientosTable() {
     const handleCreate = () => {
         setSelectedEstablecimiento(null);
         setDialogOpen(true);
+    };
+
+    const handleEdit = (record: EstablecimientoActivation) => {
+        setSelectedEstablecimiento(record);
+        setDialogOpen(true);
+    };
+
+    const handleDelete = async (record: EstablecimientoActivation) => {
+        if (!window.confirm("¿Está seguro de eliminar este establecimiento?")) return;
+        setLoading(true);
+        try {
+            await pb.collection("establecimientos").delete(record.id);
+            toast.success("Establecimiento eliminado");
+            fetchData();
+        } catch (error) {
+            console.error("Error deleting establecimiento:", error);
+            toast.error("Error al eliminar establecimiento");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const fetchData = async () => {
@@ -45,6 +66,8 @@ export function EstablecimientosTable() {
         fetchData();
     }, []);
 
+    const columns = getColumns({ onEdit: handleEdit, onDelete: handleDelete });
+
     const table = useDataTableInstance({
         columns,
         data,
@@ -52,7 +75,15 @@ export function EstablecimientosTable() {
 
     return (
         <div className="space-y-4">
-            <div className="flex justify-end">
+            <div className="flex items-center justify-between">
+                <Input
+                    placeholder="Buscar establecimiento por nombre..."
+                    value={(table.getColumn("nombre")?.getFilterValue() as string) || ""}
+                    onChange={(event) =>
+                        table.getColumn("nombre")?.setFilterValue(event.target.value)
+                    }
+                    className="max-w-sm"
+                />
                 <Button onClick={handleCreate}>
                     <Plus className="mr-2 h-4 w-4" />
                     Agregar Establecimiento

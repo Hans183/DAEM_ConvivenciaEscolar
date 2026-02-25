@@ -50,9 +50,19 @@ export const sidebarItems: NavGroup[] = [
         icon: FileText,
       },
       {
+        title: "Registro DEC",
+        url: "/dashboard/dec",
+        icon: FileText,
+      },
+      {
         title: "Establecimientos",
         url: "/dashboard/establecimientos",
         icon: School,
+      },
+      {
+        title: "Protocolos",
+        url: "/dashboard/protocolos",
+        icon: FileText,
       },
     ],
   },
