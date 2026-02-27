@@ -276,7 +276,8 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
                                                     {field.value
                                                         ? (() => {
                                                             const selected = protocols.find((p) => p.id === field.value);
-                                                            return selected ? (selected.item || selected.nombre || selected.name || selected.id) : "Protocolo no encontrado";
+                                                            const name = selected ? (selected.item || selected.nombre || selected.name || selected.id) : "Protocolo no encontrado";
+                                                            return name.length > 50 ? name.slice(0, 50) + "…" : name;
                                                         })()
                                                         : "Seleccione un protocolo"}
                                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

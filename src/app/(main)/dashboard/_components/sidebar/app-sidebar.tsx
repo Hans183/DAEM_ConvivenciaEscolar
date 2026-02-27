@@ -76,7 +76,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const collapsible = isSynced ? sidebarCollapsible : props.collapsible;
 
   const pbUser = useUser();
-  const isAdmin = pb.authStore.model?.role?.toLowerCase() === "admin";
+  const isAdmin = pbUser?.role?.toLowerCase() === "admin";
 
   // Filter out adminOnly items for non-admin users
   const visibleItems = sidebarItems.map((group) => ({

@@ -103,7 +103,8 @@ export const getColumns = ({ onEdit, onDelete, isAdmin }: GetColumnsProps): Colu
                 const expandProxy = row.original.expand?.protocolo;
                 const proto = Array.isArray(expandProxy) ? expandProxy[0] : expandProxy;
                 const name = proto?.item || proto?.nombre || proto?.name || row.getValue("protocolo");
-                return <div className="font-medium">{name}</div>;
+                const display = name && name.length > 50 ? name.slice(0, 50) + "…" : name;
+                return <div className="font-medium">{display}</div>;
             },
         },
         {

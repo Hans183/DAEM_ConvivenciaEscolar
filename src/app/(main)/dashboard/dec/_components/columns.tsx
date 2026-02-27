@@ -31,7 +31,9 @@ export type DecRecord = {
     acompanante_interno_pi: string;
     acompanante_externo_pi: string;
     hora: string;
+    hora_otro?: string;
     asignaturas: string;
+    asignatura_otra?: string;
     antecedentes: string[];
     ConflictoConEstudiante_antecedentes?: string;
     ConflictoConProfesor_antecedentes?: string;
@@ -45,14 +47,19 @@ export type DecRecord = {
     otro_consecuentes?: string;
     funciona_medida: boolean;
     propuesta_mejora?: string;
+    establecimiento?: string;
+    expand?: {
+        establecimiento?: { id: string; nombre: string };
+    };
 };
 
 interface ColumnsProps {
     onEdit: (record: DecRecord) => void;
     onDelete: (record: DecRecord) => void;
+    isAdmin?: boolean;
 }
 
-export const getColumns = ({ onEdit, onDelete }: ColumnsProps): ColumnDef<DecRecord>[] => [
+export const getColumns = ({ onEdit, onDelete, isAdmin }: ColumnsProps): ColumnDef<DecRecord>[] => [
     {
         id: "select",
         header: ({ table }) => (
@@ -121,6 +128,14 @@ export const getColumns = ({ onEdit, onDelete }: ColumnsProps): ColumnDef<DecRec
         header: "Apoderado",
         cell: ({ row }) => <div>{row.getValue("nombre_apoderado")}</div>,
     },
+    ...(isAdmin ? [{
+        accessorKey: "establecimiento",
+        header: "Establecimiento",
+        cell: ({ row }: { row: { original: DecRecord } }) => {
+            const nombre = row.original.expand?.establecimiento?.nombre;
+            return <div>{nombre ?? "-"}</div>;
+        },
+    } as ColumnDef<DecRecord>] : []),
     {
         id: "actions",
         cell: ({ row }) => {

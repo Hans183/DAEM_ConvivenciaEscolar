@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -6,7 +6,22 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { Check, ChevronsUpDown, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
 import {
     Dialog,
     DialogContent,
@@ -35,6 +50,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { pb } from "@/lib/pocketbase";
+import { cn } from "@/lib/utils";
 import type { DecRecord } from "./columns";
 
 const antecedentesOptions = [
@@ -92,7 +108,9 @@ const decFormSchema = z.object({
     acompanante_interno_pi: z.string().min(1, "Requerido"),
     acompanante_externo_pi: z.string().min(1, "Requerido"),
     hora: z.string().min(1, "Requerido"),
+    hora_otro: z.string().optional(),
     asignaturas: z.string().min(1, "Requerido"),
+    asignatura_otra: z.string().optional(),
     antecedentes: z.any().transform((val) => {
         if (Array.isArray(val)) return val;
         if (typeof val === "string") return val.split(",").map((v) => v.trim()).filter(Boolean);
@@ -118,6 +136,7 @@ const decFormSchema = z.object({
     otro_consecuentes: z.string().optional(),
     funciona_medida: z.boolean().default(false),
     propuesta_mejora: z.string().optional(),
+    establecimiento: z.string().optional(),
 });
 
 type DecFormValues = z.infer<typeof decFormSchema>;
@@ -129,8 +148,33 @@ interface DecDialogProps {
     onSuccess: () => void;
 }
 
+type Establecimiento = {
+    id: string;
+    nombre: string;
+};
+
 export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogProps) {
+    // Auth state
+    const currentUser = pb.authStore.model;
+    const isAdmin = currentUser?.role?.toLowerCase() === "admin";
+    const userEstablecimiento: string | null = currentUser?.establecimiento ?? null;
+
     const [loading, setLoading] = useState(false);
+    const [establecimientos, setEstablecimientos] = useState<Establecimiento[]>([]);
+    const [estComboboxOpen, setEstComboboxOpen] = useState(false);
+    const [antecedentesOpen, setAntecedentesOpen] = useState(false);
+    const [conductasOpen, setConductasOpen] = useState(false);
+    const [consecuentesOpen, setConsecuentesOpen] = useState(false);
+
+    // Cargar establecimientos siempre (para mostrar el nombre en modo lectura)
+    useEffect(() => {
+        if (open) {
+            pb.collection("establecimientos")
+                .getFullList({ sort: "nombre" })
+                .then((r) => setEstablecimientos(r as unknown as Establecimiento[]))
+                .catch(console.error);
+        }
+    }, [open]);
 
     const form = useForm<any>({
         resolver: zodResolver(decFormSchema),
@@ -146,7 +190,9 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
             acompanante_interno_pi: "",
             acompanante_externo_pi: "",
             hora: "",
+            hora_otro: "",
             asignaturas: "",
+            asignatura_otra: "",
             antecedentes: [],
             ConflictoConEstudiante_antecedentes: "",
             ConflictoConProfesor_antecedentes: "",
@@ -160,6 +206,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
             otro_consecuentes: "",
             funciona_medida: false,
             propuesta_mejora: "",
+            establecimiento: "",
         },
     });
 
@@ -171,6 +218,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                 antecedentes: Array.isArray(record.antecedentes) ? record.antecedentes : [],
                 conductas: Array.isArray(record.conductas) ? record.conductas : [],
                 consecuentes: Array.isArray(record.consecuentes) ? record.consecuentes : [],
+                establecimiento: record.establecimiento || "",
             });
         } else {
             form.reset({
@@ -185,7 +233,9 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                 acompanante_interno_pi: "",
                 acompanante_externo_pi: "",
                 hora: "",
+                hora_otro: "",
                 asignaturas: "",
+                asignatura_otra: "",
                 antecedentes: [],
                 ConflictoConEstudiante_antecedentes: "",
                 ConflictoConProfesor_antecedentes: "",
@@ -199,17 +249,20 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                 otro_consecuentes: "",
                 funciona_medida: false,
                 propuesta_mejora: "",
+                establecimiento: isAdmin ? "" : (userEstablecimiento ?? ""),
             });
         }
-    }, [record, form, open]);
+    }, [record, form, open, isAdmin, userEstablecimiento]);
 
     const onSubmit = async (data: DecFormValues) => {
         setLoading(true);
-        // Ensure date is properly formatted for pb if needed (usually ISO format works)
         try {
             const submitData = {
                 ...data,
-                dia: new Date(data.dia).toISOString()
+                dia: new Date(data.dia).toISOString(),
+                establecimiento: isAdmin
+                    ? (data.establecimiento || null)
+                    : (userEstablecimiento || null),
             };
 
             if (record) {
@@ -226,7 +279,6 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
             console.error("Full error object:", error);
             console.error("Response data:", error.response?.data);
 
-            // Extract PocketBase detailed validation errors if present
             let errorMessage = error.message || "Por favor verifica los datos ingresados.";
             if (error.response?.data) {
                 errorMessage = "Error PB: " + JSON.stringify(error.response.data);
@@ -241,7 +293,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
     };
 
     const [step, setStep] = useState(1);
-    const totalSteps = 5;
+    const totalSteps = 4;
 
     useEffect(() => {
         if (open) {
@@ -316,6 +368,16 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                                                         <FormMessage />
                                                     </FormItem>
                                                 )} />
+                                                {/* Campo condicional: Otro bloque/hora */}
+                                                {form.watch("hora") === "Otro" && (
+                                                    <FormField control={form.control} name="hora_otro" render={({ field }) => (
+                                                        <FormItem className="col-span-2">
+                                                            <FormLabel>Especificar bloque/hora</FormLabel>
+                                                            <FormControl><Input placeholder="Ingrese el bloque u hora" {...field} /></FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )} />
+                                                )}
                                                 <FormField control={form.control} name="asignaturas" render={({ field }) => (
                                                     <FormItem className="col-span-2">
                                                         <FormLabel>Asignatura(s)</FormLabel>
@@ -343,11 +405,91 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                                                         <FormMessage />
                                                     </FormItem>
                                                 )} />
+                                                {/* Campo condicional: Otra asignatura */}
+                                                {form.watch("asignaturas") === "Otra:" && (
+                                                    <FormField control={form.control} name="asignatura_otra" render={({ field }) => (
+                                                        <FormItem className="col-span-2">
+                                                            <FormLabel>Especificar asignatura</FormLabel>
+                                                            <FormControl><Input placeholder="Ingrese la asignatura" {...field} /></FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )} />
+                                                )}
                                             </div>
                                         </div>
 
                                         <div className="space-y-4">
                                             <h3 className="text-lg font-medium border-b pb-2">Personal a Cargo</h3>
+
+                                            {/* Campo Establecimiento */}
+                                            {isAdmin ? (
+                                                <FormField
+                                                    control={form.control}
+                                                    name="establecimiento"
+                                                    render={({ field }) => {
+                                                        const selected = establecimientos.find((e) => e.id === field.value);
+                                                        return (
+                                                            <FormItem className="flex flex-col">
+                                                                <FormLabel>Establecimiento</FormLabel>
+                                                                <Popover open={estComboboxOpen} onOpenChange={setEstComboboxOpen}>
+                                                                    <PopoverTrigger asChild>
+                                                                        <FormControl>
+                                                                            <Button
+                                                                                variant="outline"
+                                                                                role="combobox"
+                                                                                className={cn(
+                                                                                    "w-full justify-between",
+                                                                                    !selected && "text-muted-foreground"
+                                                                                )}
+                                                                            >
+                                                                                {selected ? selected.nombre : "Seleccione un establecimiento"}
+                                                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                                            </Button>
+                                                                        </FormControl>
+                                                                    </PopoverTrigger>
+                                                                    <PopoverContent className="w-[600px] p-0" align="start">
+                                                                        <Command>
+                                                                            <CommandInput placeholder="Buscar establecimiento..." />
+                                                                            <CommandList onWheel={(e) => e.stopPropagation()}>
+                                                                                <CommandEmpty>No se encontraron establecimientos.</CommandEmpty>
+                                                                                <CommandGroup>
+                                                                                    {establecimientos.map((est) => (
+                                                                                        <CommandItem
+                                                                                            key={est.id}
+                                                                                            value={est.nombre}
+                                                                                            onSelect={() => {
+                                                                                                form.setValue("establecimiento", est.id);
+                                                                                                setEstComboboxOpen(false);
+                                                                                            }}
+                                                                                        >
+                                                                                            <Check
+                                                                                                className={cn(
+                                                                                                    "mr-2 h-4 w-4",
+                                                                                                    est.id === field.value ? "opacity-100" : "opacity-0"
+                                                                                                )}
+                                                                                            />
+                                                                                            {est.nombre}
+                                                                                        </CommandItem>
+                                                                                    ))}
+                                                                                </CommandGroup>
+                                                                            </CommandList>
+                                                                        </Command>
+                                                                    </PopoverContent>
+                                                                </Popover>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        );
+                                                    }}
+                                                />
+                                            ) : (
+                                                <div className="space-y-1">
+                                                    <p className="text-sm font-medium">Establecimiento</p>
+                                                    <p className="flex h-9 w-full items-center rounded-md border border-input bg-muted px-3 py-1 text-sm text-muted-foreground">
+                                                        {establecimientos.find((e) => e.id === userEstablecimiento)?.nombre ?? "Sin establecimiento asignado"}
+                                                    </p>
+                                                </div>
+                                            )}
+
                                             <div className="grid grid-cols-2 gap-4">
                                                 <FormField control={form.control} name="encargado_pi" render={({ field }) => (
                                                     <FormItem><FormLabel>Encargado</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
@@ -363,7 +505,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                                     </div>
                                 )}
 
-                                {/* PASO 2: Estudiante y Apoderado */}
+                                {/* PASO 2: Estudiante, Apoderado y Antecedentes */}
                                 {step === 2 && (
                                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                                         <div className="space-y-4">
@@ -389,129 +531,188 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                                                 )} />
                                             </div>
                                         </div>
-                                    </div>
-                                )}
 
-                                {/* PASO 3: Antecedentes */}
-                                {step === 3 && (
-                                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                                        <div className="space-y-4">
-                                            <h3 className="text-lg font-medium border-b pb-2">Antecedentes</h3>
-                                            <div className="grid grid-cols-1 gap-4">
-                                                <FormField control={form.control} name="antecedentes" render={() => (
-                                                    <FormItem>
-                                                        <div className="mb-4">
-                                                            <FormLabel className="text-base">Seleccione los Antecedentes</FormLabel>
-                                                        </div>
-                                                        <div className="grid grid-cols-1 gap-2">
-                                                            {antecedentesOptions.map((item) => (
-                                                                <FormField
-                                                                    key={item}
-                                                                    control={form.control}
-                                                                    name="antecedentes"
-                                                                    render={({ field }) => {
-                                                                        const isChecked = Array.isArray(field.value) ? field.value.includes(item) : false;
-                                                                        return (
-                                                                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-2 rounded hover:bg-muted/50 transition-colors">
-                                                                                <FormControl>
-                                                                                    <Checkbox
-                                                                                        checked={isChecked}
-                                                                                        onCheckedChange={(checked) => {
-                                                                                            const currentValues = Array.isArray(field.value) ? field.value : [];
-                                                                                            if (checked) {
-                                                                                                field.onChange([...currentValues, item]);
-                                                                                            } else {
-                                                                                                field.onChange(currentValues.filter((val) => val !== item));
-                                                                                            }
-                                                                                        }}
-                                                                                    />
-                                                                                </FormControl>
-                                                                                <FormLabel className="font-normal text-sm cursor-pointer w-full leading-snug m-0">
-                                                                                    {item}
-                                                                                </FormLabel>
-                                                                            </FormItem>
-                                                                        );
-                                                                    }}
-                                                                />
-                                                            ))}
-                                                        </div>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )} />
-                                                <div className="grid grid-cols-2 gap-4 border-t pt-4">
-                                                    <FormField control={form.control} name="ConflictoConEstudiante_antecedentes" render={({ field }) => (
-                                                        <FormItem><FormLabel>Detalles Estudiante(s) (Si aplica)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                                    )} />
-                                                    <FormField control={form.control} name="ConflictoConProfesor_antecedentes" render={({ field }) => (
-                                                        <FormItem><FormLabel>Detalles Profesor (Si aplica)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                                    )} />
-                                                    <FormField control={form.control} name="otra_antecedentes" render={({ field }) => (
-                                                        <FormItem className="col-span-2"><FormLabel>Especificar otro antecedente</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                                    )} />
+
+                                        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                                            <div className="space-y-4">
+                                                <h3 className="text-lg font-medium border-b pb-2">Antecedentes</h3>
+                                                <div className="grid grid-cols-1 gap-4">
+                                                    <FormField control={form.control} name="antecedentes" render={({ field }) => {
+                                                        const selected: string[] = Array.isArray(field.value) ? field.value : [];
+                                                        return (
+                                                            <FormItem className="flex flex-col">
+                                                                <FormLabel>Seleccione los Antecedentes</FormLabel>
+                                                                <Popover open={antecedentesOpen} onOpenChange={setAntecedentesOpen}>
+                                                                    <PopoverTrigger asChild>
+                                                                        <FormControl>
+                                                                            <Button
+                                                                                variant="outline"
+                                                                                role="combobox"
+                                                                                className={cn("w-full min-h-10 h-auto justify-start flex-wrap gap-1 py-2", selected.length === 0 && "text-muted-foreground")}
+                                                                            >
+                                                                                {selected.length === 0 ? (
+                                                                                    <span>Seleccione antecedentes...</span>
+                                                                                ) : (
+                                                                                    selected.map((item) => (
+                                                                                        <Badge
+                                                                                            key={item}
+                                                                                            variant="secondary"
+                                                                                            className="text-xs"
+                                                                                            onClick={(e) => {
+                                                                                                e.stopPropagation();
+                                                                                                field.onChange(selected.filter((v) => v !== item));
+                                                                                            }}
+                                                                                        >
+                                                                                            {item.length > 30 ? item.slice(0, 30) + "…" : item}
+                                                                                            <X className="ml-1 h-3 w-3 cursor-pointer" />
+                                                                                        </Badge>
+                                                                                    ))
+                                                                                )}
+                                                                            </Button>
+                                                                        </FormControl>
+                                                                    </PopoverTrigger>
+                                                                    <PopoverContent className="w-[620px] p-0" align="start">
+                                                                        <Command>
+                                                                            <CommandInput placeholder="Buscar antecedente..." />
+                                                                            <CommandList onWheel={(e) => e.stopPropagation()}>
+                                                                                <CommandEmpty>No se encontraron opciones.</CommandEmpty>
+                                                                                <CommandGroup>
+                                                                                    {antecedentesOptions.map((item) => (
+                                                                                        <CommandItem
+                                                                                            key={item}
+                                                                                            value={item}
+                                                                                            onSelect={() => {
+                                                                                                const next = selected.includes(item)
+                                                                                                    ? selected.filter((v) => v !== item)
+                                                                                                    : [...selected, item];
+                                                                                                field.onChange(next);
+                                                                                            }}
+                                                                                        >
+                                                                                            <Check className={cn("mr-2 h-4 w-4", selected.includes(item) ? "opacity-100" : "opacity-0")} />
+                                                                                            {item}
+                                                                                        </CommandItem>
+                                                                                    ))}
+                                                                                </CommandGroup>
+                                                                            </CommandList>
+                                                                        </Command>
+                                                                    </PopoverContent>
+                                                                </Popover>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        );
+                                                    }} />
+                                                    {(form.watch("antecedentes") ?? []).includes("Otra:") && (
+                                                        <FormField control={form.control} name="otra_antecedentes" render={({ field }) => (
+                                                            <FormItem><FormLabel>Especificar otro antecedente</FormLabel><FormControl><Input placeholder="Ingrese el antecedente" {...field} /></FormControl><FormMessage /></FormItem>
+                                                        )} />
+                                                    )}
+                                                    <div className="grid grid-cols-2 gap-4 border-t pt-4">
+                                                        <FormField control={form.control} name="ConflictoConEstudiante_antecedentes" render={({ field }) => (
+                                                            <FormItem><FormLabel>Detalles Estudiante(s) (Si aplica)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                                        )} />
+                                                        <FormField control={form.control} name="ConflictoConProfesor_antecedentes" render={({ field }) => (
+                                                            <FormItem><FormLabel>Detalles Profesor (Si aplica)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                                        )} />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* PASO 4: Conductas */}
-                                {step === 4 && (
+                                {/* PASO 3: Conductas */}
+                                {step === 3 && (
                                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                                         <div className="space-y-4">
                                             <h3 className="text-lg font-medium border-b pb-2">Conductas</h3>
                                             <div className="grid grid-cols-1 gap-4">
-                                                <FormField control={form.control} name="conductas" render={() => (
-                                                    <FormItem>
-                                                        <div className="mb-4">
-                                                            <FormLabel className="text-base">Seleccione las Conductas</FormLabel>
-                                                        </div>
-                                                        <div className="grid grid-cols-1 gap-2">
-                                                            {conductasOptions.map((item) => (
-                                                                <FormField
-                                                                    key={item}
-                                                                    control={form.control}
-                                                                    name="conductas"
-                                                                    render={({ field }) => {
-                                                                        const isChecked = Array.isArray(field.value) ? field.value.includes(item) : false;
-                                                                        return (
-                                                                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-2 rounded hover:bg-muted/50 transition-colors">
-                                                                                <FormControl>
-                                                                                    <Checkbox
-                                                                                        checked={isChecked}
-                                                                                        onCheckedChange={(checked) => {
-                                                                                            const currentValues = Array.isArray(field.value) ? field.value : [];
-                                                                                            if (checked) {
-                                                                                                field.onChange([...currentValues, item]);
-                                                                                            } else {
-                                                                                                field.onChange(currentValues.filter((val) => val !== item));
-                                                                                            }
+                                                <FormField control={form.control} name="conductas" render={({ field }) => {
+                                                    const selected: string[] = Array.isArray(field.value) ? field.value : [];
+                                                    return (
+                                                        <FormItem className="flex flex-col">
+                                                            <FormLabel>Seleccione las Conductas</FormLabel>
+                                                            <Popover open={conductasOpen} onOpenChange={setConductasOpen}>
+                                                                <PopoverTrigger asChild>
+                                                                    <FormControl>
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            role="combobox"
+                                                                            className={cn("w-full min-h-10 h-auto justify-start flex-wrap gap-1 py-2", selected.length === 0 && "text-muted-foreground")}
+                                                                        >
+                                                                            {selected.length === 0 ? (
+                                                                                <span>Seleccione conductas...</span>
+                                                                            ) : (
+                                                                                selected.map((item) => (
+                                                                                    <Badge
+                                                                                        key={item}
+                                                                                        variant="secondary"
+                                                                                        className="text-xs"
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            field.onChange(selected.filter((v) => v !== item));
                                                                                         }}
-                                                                                    />
-                                                                                </FormControl>
-                                                                                <FormLabel className="font-normal text-sm cursor-pointer w-full leading-snug m-0">
-                                                                                    {item}
-                                                                                </FormLabel>
-                                                                            </FormItem>
-                                                                        );
-                                                                    }}
-                                                                />
-                                                            ))}
-                                                        </div>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )} />
+                                                                                    >
+                                                                                        {item.length > 30 ? item.slice(0, 30) + "…" : item}
+                                                                                        <X className="ml-1 h-3 w-3 cursor-pointer" />
+                                                                                    </Badge>
+                                                                                ))
+                                                                            )}
+                                                                        </Button>
+                                                                    </FormControl>
+                                                                </PopoverTrigger>
+                                                                <PopoverContent className="w-[620px] p-0" align="start">
+                                                                    <Command>
+                                                                        <CommandInput placeholder="Buscar conducta..." />
+                                                                        <CommandList onWheel={(e) => e.stopPropagation()}>
+                                                                            <CommandEmpty>No se encontraron opciones.</CommandEmpty>
+                                                                            <CommandGroup>
+                                                                                {conductasOptions.map((item) => (
+                                                                                    <CommandItem
+                                                                                        key={item}
+                                                                                        value={item}
+                                                                                        onSelect={() => {
+                                                                                            const next = selected.includes(item)
+                                                                                                ? selected.filter((v) => v !== item)
+                                                                                                : [...selected, item];
+                                                                                            field.onChange(next);
+                                                                                        }}
+                                                                                    >
+                                                                                        <Check className={cn("mr-2 h-4 w-4", selected.includes(item) ? "opacity-100" : "opacity-0")} />
+                                                                                        {item}
+                                                                                    </CommandItem>
+                                                                                ))}
+                                                                            </CommandGroup>
+                                                                        </CommandList>
+                                                                    </Command>
+                                                                </PopoverContent>
+                                                            </Popover>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    );
+                                                }} />
+                                                {(form.watch("conductas") ?? []).includes("Otro:") && (
+                                                    <FormField control={form.control} name="otro_conductas" render={({ field }) => (
+                                                        <FormItem><FormLabel>Especificar otra conducta</FormLabel><FormControl><Input placeholder="Ingrese la conducta" {...field} /></FormControl><FormMessage /></FormItem>
+                                                    )} />
+                                                )}
                                                 <div className="grid grid-cols-2 gap-4 border-t pt-4">
                                                     <FormField control={form.control} name="Agresion_fisica_conductas" render={({ field }) => (
                                                         <FormItem><FormLabel>Detalles Agresión Física (Si aplica)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                                                     )} />
                                                     <FormField control={form.control} name="duracion_conductas" render={({ field }) => (
-                                                        <FormItem><FormLabel>Duración de la conducta</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                                        <FormItem><FormLabel>Duración de la conducta</FormLabel>
+                                                            <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                                                <FormControl><SelectTrigger><SelectValue placeholder="Seleccione duración" /></SelectTrigger></FormControl>
+                                                                <SelectContent>
+                                                                    <SelectItem value="10 a 30 Minutos">10 a 30 Minutos</SelectItem>
+                                                                    <SelectItem value="30 a 60 Minutos">30 a 60 Minutos</SelectItem>
+                                                                    <SelectItem value="Mas de 1 hora">Más de 1 hora</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <FormMessage /></FormItem>
                                                     )} />
                                                     <FormField control={form.control} name="descripcion_conductas" render={({ field }) => (
                                                         <FormItem className="col-span-2"><FormLabel>Descripción Adicional</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
-                                                    )} />
-                                                    <FormField control={form.control} name="otro_conductas" render={({ field }) => (
-                                                        <FormItem className="col-span-2"><FormLabel>Otras Conductas</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                                                     )} />
                                                 </div>
                                             </div>
@@ -519,63 +720,111 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                                     </div>
                                 )}
 
-                                {/* PASO 5: Consecuentes */}
-                                {step === 5 && (
+                                {/* PASO 4: Consecuentes */}
+                                {step === 4 && (
                                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                                         <div className="space-y-4">
                                             <h3 className="text-lg font-medium border-b pb-2">Consecuencias y Medidas</h3>
                                             <div className="grid grid-cols-1 gap-4">
-                                                <FormField control={form.control} name="consecuentes" render={() => (
-                                                    <FormItem>
-                                                        <div className="mb-4">
-                                                            <FormLabel className="text-base">Seleccione los Consecuentes</FormLabel>
-                                                        </div>
-                                                        <div className="grid grid-cols-1 gap-2">
-                                                            {consecuentesOptions.map((item) => (
-                                                                <FormField
-                                                                    key={item}
-                                                                    control={form.control}
-                                                                    name="consecuentes"
-                                                                    render={({ field }) => {
-                                                                        const isChecked = Array.isArray(field.value) ? field.value.includes(item) : false;
-                                                                        return (
-                                                                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-2 rounded hover:bg-muted/50 transition-colors">
-                                                                                <FormControl>
-                                                                                    <Checkbox
-                                                                                        checked={isChecked}
-                                                                                        onCheckedChange={(checked) => {
-                                                                                            const currentValues = Array.isArray(field.value) ? field.value : [];
-                                                                                            if (checked) {
-                                                                                                field.onChange([...currentValues, item]);
-                                                                                            } else {
-                                                                                                field.onChange(currentValues.filter((val) => val !== item));
-                                                                                            }
+                                                <FormField control={form.control} name="consecuentes" render={({ field }) => {
+                                                    const selected: string[] = Array.isArray(field.value) ? field.value : [];
+                                                    return (
+                                                        <FormItem className="flex flex-col">
+                                                            <FormLabel>Seleccione los Consecuentes</FormLabel>
+                                                            <Popover open={consecuentesOpen} onOpenChange={setConsecuentesOpen}>
+                                                                <PopoverTrigger asChild>
+                                                                    <FormControl>
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            role="combobox"
+                                                                            className={cn("w-full min-h-10 h-auto justify-start flex-wrap gap-1 py-2", selected.length === 0 && "text-muted-foreground")}
+                                                                        >
+                                                                            {selected.length === 0 ? (
+                                                                                <span>Seleccione consecuentes...</span>
+                                                                            ) : (
+                                                                                selected.map((item) => (
+                                                                                    <Badge
+                                                                                        key={item}
+                                                                                        variant="secondary"
+                                                                                        className="text-xs"
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            field.onChange(selected.filter((v) => v !== item));
                                                                                         }}
-                                                                                    />
-                                                                                </FormControl>
-                                                                                <FormLabel className="font-normal text-sm cursor-pointer w-full leading-snug m-0">
-                                                                                    {item}
-                                                                                </FormLabel>
-                                                                            </FormItem>
-                                                                        );
-                                                                    }}
-                                                                />
-                                                            ))}
+                                                                                    >
+                                                                                        {item.length > 30 ? item.slice(0, 30) + "…" : item}
+                                                                                        <X className="ml-1 h-3 w-3 cursor-pointer" />
+                                                                                    </Badge>
+                                                                                ))
+                                                                            )}
+                                                                        </Button>
+                                                                    </FormControl>
+                                                                </PopoverTrigger>
+                                                                <PopoverContent className="w-[620px] p-0" align="start">
+                                                                    <Command>
+                                                                        <CommandInput placeholder="Buscar consecuente..." />
+                                                                        <CommandList onWheel={(e) => e.stopPropagation()}>
+                                                                            <CommandEmpty>No se encontraron opciones.</CommandEmpty>
+                                                                            <CommandGroup>
+                                                                                {consecuentesOptions.map((item) => (
+                                                                                    <CommandItem
+                                                                                        key={item}
+                                                                                        value={item}
+                                                                                        onSelect={() => {
+                                                                                            const next = selected.includes(item)
+                                                                                                ? selected.filter((v) => v !== item)
+                                                                                                : [...selected, item];
+                                                                                            field.onChange(next);
+                                                                                        }}
+                                                                                    >
+                                                                                        <Check className={cn("mr-2 h-4 w-4", selected.includes(item) ? "opacity-100" : "opacity-0")} />
+                                                                                        {item}
+                                                                                    </CommandItem>
+                                                                                ))}
+                                                                            </CommandGroup>
+                                                                        </CommandList>
+                                                                    </Command>
+                                                                </PopoverContent>
+                                                            </Popover>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    );
+                                                }} />
+                                                {(form.watch("consecuentes") ?? []).includes("Otro:") && (
+                                                    <FormField control={form.control} name="otro_consecuentes" render={({ field }) => (
+                                                        <FormItem><FormLabel>Especificar otro consecuente</FormLabel><FormControl><Input placeholder="Ingrese el consecuente" {...field} /></FormControl><FormMessage /></FormItem>
+                                                    )} />
+                                                )}
+                                                <FormField control={form.control} name="funciona_medida" render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="text-base font-semibold">¿Funciona la Medida tomada?</FormLabel>
+                                                        <div className="flex gap-3 pt-1">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => field.onChange(true)}
+                                                                className={cn(
+                                                                    "flex-1 py-3 rounded-lg border-2 font-semibold text-sm transition-all duration-200",
+                                                                    field.value === true
+                                                                        ? "border-green-500 bg-green-500 text-white shadow-md"
+                                                                        : "border-border bg-background text-muted-foreground hover:border-green-400 hover:text-green-600"
+                                                                )}
+                                                            >
+                                                                ✓ Sí
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => field.onChange(false)}
+                                                                className={cn(
+                                                                    "flex-1 py-3 rounded-lg border-2 font-semibold text-sm transition-all duration-200",
+                                                                    field.value === false
+                                                                        ? "border-red-500 bg-red-500 text-white shadow-md"
+                                                                        : "border-border bg-background text-muted-foreground hover:border-red-400 hover:text-red-600"
+                                                                )}
+                                                            >
+                                                                ✗ No
+                                                            </button>
                                                         </div>
                                                         <FormMessage />
-                                                    </FormItem>
-                                                )} />
-                                                <FormField control={form.control} name="otro_consecuentes" render={({ field }) => (
-                                                    <FormItem><FormLabel>Otros Consecuentes</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                                )} />
-                                                <FormField control={form.control} name="funciona_medida" render={({ field }) => (
-                                                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 bg-muted/30">
-                                                        <FormControl>
-                                                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                                                        </FormControl>
-                                                        <div className="space-y-1 leading-none">
-                                                            <FormLabel className="font-semibold text-base cursor-pointer">¿Funciona la Medida tomada?</FormLabel>
-                                                        </div>
                                                     </FormItem>
                                                 )} />
                                                 <FormField control={form.control} name="propuesta_mejora" render={({ field }) => (

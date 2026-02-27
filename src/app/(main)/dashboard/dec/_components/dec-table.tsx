@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { pb } from "@/lib/pocketbase";
@@ -8,10 +8,13 @@ import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
+import { useUser } from "@/hooks/use-user";
 import { getColumns, type DecRecord } from "./columns";
 import { DecDialog } from "./dec-dialog";
 
 export function DecTable() {
+    const user = useUser();
+    const isAdmin = user?.role?.toLowerCase() === "admin";
     const [data, setData] = useState<DecRecord[]>([]);
     const [loading, setLoading] = useState(true);
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -41,10 +44,17 @@ export function DecTable() {
     };
 
     const fetchData = async () => {
+        if (!user) return;
         setLoading(true);
         try {
+            const filter = !isAdmin && user.establecimiento
+                ? `establecimiento = "${user.establecimiento}"`
+                : "";
+
             const records = await pb.collection("DEC").getFullList({
                 sort: "-created",
+                expand: "establecimiento",
+                ...(filter ? { filter } : {}),
             });
             setData(records as unknown as DecRecord[]);
         } catch (error: any) {
@@ -57,10 +67,17 @@ export function DecTable() {
     };
 
     useEffect(() => {
-        fetchData();
-    }, []);
+        if (user !== null) {
+            fetchData();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user]);
 
-    const columns = getColumns({ onEdit: handleEdit, onDelete: handleDelete });
+    const columns = useMemo(
+        () => getColumns({ onEdit: handleEdit, onDelete: handleDelete, isAdmin }),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [isAdmin]
+    );
 
     const table = useDataTableInstance({
         columns,
