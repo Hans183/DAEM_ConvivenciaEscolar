@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
+import { Check, ChevronsUpDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +26,20 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 import { pb } from "@/lib/pocketbase";
 import type { ProtocoloRecord } from "./protocolos-columns";
 
@@ -35,6 +50,7 @@ const protocoloFormSchema = z.object({
     descripcion: z.string().min(1, {
         message: "La descripción es obligatoria.",
     }),
+    establecimiento: z.string().optional(),
 });
 
 type ProtocoloFormValues = z.infer<typeof protocoloFormSchema>;
@@ -44,6 +60,8 @@ interface ProtocoloDialogProps {
     onOpenChange: (open: boolean) => void;
     protocolo?: ProtocoloRecord | null;
     onSuccess: () => void;
+    isAdmin: boolean;
+    userEstablecimiento: string | null;
 }
 
 export function ProtocoloDialog({
@@ -51,14 +69,29 @@ export function ProtocoloDialog({
     onOpenChange,
     protocolo,
     onSuccess,
+    isAdmin,
+    userEstablecimiento,
 }: ProtocoloDialogProps) {
     const [loading, setLoading] = useState(false);
+    const [establecimientos, setEstablecimientos] = useState<any[]>([]);
+    const [popoverOpen, setPopoverOpen] = useState(false);
+
+    useEffect(() => {
+        if (open) {
+            // Always fetch establecimientos so the user's establishment name can be shown
+            pb.collection("establecimientos")
+                .getFullList({ sort: "nombre" })
+                .then(setEstablecimientos)
+                .catch(console.error);
+        }
+    }, [open]);
 
     const form = useForm<ProtocoloFormValues>({
         resolver: zodResolver(protocoloFormSchema),
         defaultValues: {
             nombre: "",
             descripcion: "",
+            establecimiento: "",
         },
     });
 
@@ -67,23 +100,33 @@ export function ProtocoloDialog({
             form.reset({
                 nombre: protocolo.nombre,
                 descripcion: protocolo.descripcion,
+                establecimiento: protocolo.establecimiento || "",
             });
         } else {
             form.reset({
                 nombre: "",
                 descripcion: "",
+                establecimiento: isAdmin ? "" : (userEstablecimiento ?? ""),
             });
         }
-    }, [protocolo, form]);
+    }, [protocolo, form, isAdmin, userEstablecimiento]);
 
     const onSubmit = async (data: ProtocoloFormValues) => {
         setLoading(true);
         try {
+            const payload = {
+                nombre: data.nombre,
+                descripcion: data.descripcion,
+                establecimiento: isAdmin
+                    ? (data.establecimiento || null)
+                    : (userEstablecimiento || null),
+            };
+
             if (protocolo) {
-                await pb.collection("protocolos").update(protocolo.id, data);
+                await pb.collection("protocolos").update(protocolo.id, payload);
                 toast.success("Protocolo actualizado correctamente");
             } else {
-                await pb.collection("protocolos").create(data);
+                await pb.collection("protocolos").create(payload);
                 toast.success("Protocolo creado correctamente");
             }
 
@@ -154,6 +197,70 @@ export function ProtocoloDialog({
                                 </FormItem>
                             )}
                         />
+
+                        {/* Establecimiento */}
+                        {isAdmin ? (
+                            <FormField
+                                control={form.control}
+                                name="establecimiento"
+                                render={({ field }) => {
+                                    const selected = establecimientos.find((e) => e.id === field.value);
+                                    return (
+                                        <FormItem>
+                                            <FormLabel>Establecimiento</FormLabel>
+                                            <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                                                <PopoverTrigger asChild>
+                                                    <FormControl>
+                                                        <Button
+                                                            variant="outline"
+                                                            role="combobox"
+                                                            className={cn(
+                                                                "w-full justify-between font-normal",
+                                                                !selected && "text-muted-foreground",
+                                                            )}
+                                                        >
+                                                            {selected ? selected.nombre : "Seleccione un establecimiento"}
+                                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                        </Button>
+                                                    </FormControl>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-full p-0" align="start">
+                                                    <Command>
+                                                        <CommandInput placeholder="Buscar establecimiento..." />
+                                                        <CommandList onWheel={(e) => e.stopPropagation()}>
+                                                            <CommandEmpty>No se encontraron resultados.</CommandEmpty>
+                                                            <CommandGroup>
+                                                                {establecimientos.map((est) => (
+                                                                    <CommandItem
+                                                                        key={est.id}
+                                                                        value={est.nombre}
+                                                                        onSelect={() => {
+                                                                            field.onChange(est.id);
+                                                                            setPopoverOpen(false);
+                                                                        }}
+                                                                    >
+                                                                        <Check className={cn("mr-2 h-4 w-4", field.value === est.id ? "opacity-100" : "opacity-0")} />
+                                                                        {est.nombre}
+                                                                    </CommandItem>
+                                                                ))}
+                                                            </CommandGroup>
+                                                        </CommandList>
+                                                    </Command>
+                                                </PopoverContent>
+                                            </Popover>
+                                            <FormMessage />
+                                        </FormItem>
+                                    );
+                                }}
+                            />
+                        ) : (
+                            <div className="space-y-1">
+                                <p className="text-sm font-medium">Establecimiento</p>
+                                <p className="flex h-9 w-full items-center rounded-md border border-input bg-muted px-3 py-1 text-sm text-muted-foreground">
+                                    {establecimientos.find((e) => e.id === userEstablecimiento)?.nombre ?? "Sin establecimiento asignado"}
+                                </p>
+                            </div>
+                        )}
 
                         {/* Botones */}
                         <DialogFooter>

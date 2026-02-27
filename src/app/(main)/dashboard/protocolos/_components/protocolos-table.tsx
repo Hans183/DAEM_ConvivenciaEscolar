@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { pb } from "@/lib/pocketbase";
@@ -9,10 +9,14 @@ import { Input } from "@/components/ui/input";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
+import { useUser } from "@/hooks/use-user";
 import { getColumns, type ProtocoloRecord } from "./protocolos-columns";
 import { ProtocoloDialog } from "./protocolos-dialog";
 
 export function ProtocolosTable() {
+    const user = useUser();
+    const isAdmin = user?.role?.toLowerCase() === "admin";
+
     const [data, setData] = useState<ProtocoloRecord[]>([]);
     const [loading, setLoading] = useState(true);
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -45,12 +49,20 @@ export function ProtocolosTable() {
     };
 
     const fetchData = async () => {
+        if (!user) return; // Wait until user is loaded
         setLoading(true);
         try {
+            // If the user is not an Admin, filter by their establecimiento
+            const filter = !isAdmin && user.establecimiento
+                ? `establecimiento = "${user.establecimiento}"`
+                : "";
+
             const records = await pb
                 .collection("protocolos")
                 .getFullList({
                     sort: "-created",
+                    expand: "establecimiento",
+                    ...(filter ? { filter } : {}),
                 });
 
             setData(records as unknown as ProtocoloRecord[]);
@@ -63,11 +75,19 @@ export function ProtocolosTable() {
         }
     };
 
+    // Re-fetch when user loads
     useEffect(() => {
-        fetchData();
-    }, []);
+        if (user !== null) {
+            fetchData();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user]);
 
-    const columns = getColumns({ onEdit: handleEdit, onDelete: handleDelete });
+    const columns = useMemo(
+        () => getColumns({ onEdit: handleEdit, onDelete: handleDelete, isAdmin }),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [isAdmin]
+    );
 
     const table = useDataTableInstance({
         columns,
@@ -108,6 +128,8 @@ export function ProtocolosTable() {
                 onOpenChange={setDialogOpen}
                 protocolo={selectedProtocolo}
                 onSuccess={fetchData}
+                isAdmin={isAdmin}
+                userEstablecimiento={user?.establecimiento ?? null}
             />
         </div>
     );

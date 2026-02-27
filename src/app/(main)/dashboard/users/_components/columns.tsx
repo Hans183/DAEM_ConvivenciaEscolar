@@ -79,6 +79,16 @@ export const getColumns = ({ onEdit, onDelete }: GetColumnsProps): ColumnDef<Aut
         ),
     },
     {
+        accessorKey: "establecimiento",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Establecimiento" />,
+        cell: ({ row }) => {
+            const user = row.original;
+            if (!user) return null;
+            const establecimiento = user.expand?.establecimiento?.nombre;
+            return <div className="w-[150px] truncate">{establecimiento || "Sin asignar"}</div>;
+        },
+    },
+    {
         accessorKey: "role",
         header: ({ column }) => <DataTableColumnHeader column={column} title="Rol" />,
         cell: ({ row }) => <div className="w-[100px]">{row.getValue("role")}</div>,

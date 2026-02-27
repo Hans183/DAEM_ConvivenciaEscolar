@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { pb } from "@/lib/pocketbase";
@@ -8,10 +8,14 @@ import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
-import { columns, type ProtocolActivation } from "./columns";
+import { useUser } from "@/hooks/use-user";
+import { getColumns, type ProtocolActivation } from "./columns";
 import { ProtocolDialog } from "./protocol-dialog";
 
 export function ProtocolsTable() {
+    const user = useUser();
+    const isAdmin = user?.role?.toLowerCase() === "admin";
+
     const [data, setData] = useState<ProtocolActivation[]>([]);
     const [loading, setLoading] = useState(true);
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -22,12 +26,38 @@ export function ProtocolsTable() {
         setDialogOpen(true);
     };
 
-    const fetchData = async () => {
+    const handleEdit = (record: ProtocolActivation) => {
+        setSelectedProtocol(record);
+        setDialogOpen(true);
+    };
+
+    const handleDelete = async (record: ProtocolActivation) => {
+        if (!window.confirm("¿Está seguro de eliminar este registro?")) return;
         setLoading(true);
         try {
+            await pb.collection("activacion_protocolos").delete(record.id);
+            toast.success("Registro eliminado");
+            fetchData();
+        } catch (error) {
+            console.error("Error deleting:", error);
+            toast.error("Error al eliminar registro");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchData = async () => {
+        if (!user) return;
+        setLoading(true);
+        try {
+            const filter = !isAdmin && user.establecimiento
+                ? `establecimiento = "${user.establecimiento}"`
+                : "";
+
             const records = await pb.collection("activacion_protocolos").getFullList({
                 sort: "-created",
-                expand: "protocolo",
+                expand: "protocolo,establecimiento",
+                ...(filter ? { filter } : {}),
             });
             setData(records as unknown as ProtocolActivation[]);
         } catch (error: any) {
@@ -40,13 +70,19 @@ export function ProtocolsTable() {
     };
 
     useEffect(() => {
-        fetchData();
-    }, []);
+        if (user !== null) {
+            fetchData();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user]);
 
-    const table = useDataTableInstance({
-        columns,
-        data,
-    });
+    const columns = useMemo(
+        () => getColumns({ onEdit: handleEdit, onDelete: handleDelete, isAdmin }),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [isAdmin]
+    );
+
+    const table = useDataTableInstance({ columns, data });
 
     return (
         <div className="space-y-4">

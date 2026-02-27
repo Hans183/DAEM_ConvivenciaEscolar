@@ -37,6 +37,7 @@ export function UsersTable() {
         try {
             const records = await pb.collection("users").getFullList({
                 sort: "-created",
+                expand: "establecimiento",
             });
             setData(records as unknown as AuthModel[]);
         } catch (error: any) {

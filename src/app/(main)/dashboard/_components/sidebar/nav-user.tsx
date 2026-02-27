@@ -78,6 +78,9 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => {
               pb.authStore.clear();
+              // Borra explícitamente la cookie para que el middleware
+              // no redirija de vuelta al dashboard
+              document.cookie = "pb_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
               window.location.href = "/auth/login";
             }}>
               <LogOut />

@@ -21,6 +21,7 @@ export interface NavMainItem {
   subItems?: NavSubItem[];
   comingSoon?: boolean;
   newTab?: boolean;
+  adminOnly?: boolean;
 }
 
 export interface NavGroup {
@@ -43,6 +44,7 @@ export const sidebarItems: NavGroup[] = [
         title: "Usuarios",
         url: "/dashboard/users",
         icon: Users,
+        adminOnly: true,
       },
       {
         title: "Activación Protocolos",
@@ -58,11 +60,13 @@ export const sidebarItems: NavGroup[] = [
         title: "Establecimientos",
         url: "/dashboard/establecimientos",
         icon: School,
+        adminOnly: true,
       },
       {
         title: "Protocolos",
         url: "/dashboard/protocolos",
         icon: FileText,
+        adminOnly: true,
       },
     ],
   },

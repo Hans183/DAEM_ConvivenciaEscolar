@@ -263,7 +263,7 @@ export function DataTable({ data }: { data: User[] }) {
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
+                  Sin resultados.
                 </TableCell>
               </TableRow>
             )}
@@ -274,8 +274,8 @@ export function DataTable({ data }: { data: User[] }) {
       {/* Pagination */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
+          {table.getFilteredSelectedRowModel().rows.length} de{" "}
+          {table.getFilteredRowModel().rows.length} filas seleccionadas.
         </div>
         <div className="flex items-center space-x-2">
           <Button
@@ -284,7 +284,7 @@ export function DataTable({ data }: { data: User[] }) {
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
-            Previous
+              Anterior
           </Button>
           <Button
             variant="outline"
@@ -292,7 +292,7 @@ export function DataTable({ data }: { data: User[] }) {
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
-            Next
+            Siguiente
           </Button>
         </div>
       </div>

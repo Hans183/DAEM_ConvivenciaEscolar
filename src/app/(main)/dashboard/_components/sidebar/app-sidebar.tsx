@@ -76,6 +76,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const collapsible = isSynced ? sidebarCollapsible : props.collapsible;
 
   const pbUser = useUser();
+  const isAdmin = pb.authStore.model?.role?.toLowerCase() === "admin";
+
+  // Filter out adminOnly items for non-admin users
+  const visibleItems = sidebarItems.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => !item.adminOnly || isAdmin),
+  }));
 
   // derived user object for NavUser, falling back to rootUser if not logged in
   // or mapping PB user fields to the expected format
@@ -108,7 +115,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={sidebarItems} />
+        <NavMain items={visibleItems} />
         {/* <NavDocuments items={data.documents} /> */}
         {/* <NavSecondary items={data.navSecondary} className="mt-auto" /> */}
       </SidebarContent>

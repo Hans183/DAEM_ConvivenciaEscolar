@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import type { AuthModel } from "pocketbase";
+import { Check, ChevronsUpDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -32,7 +33,22 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 import { pb } from "@/lib/pocketbase";
+import { createUserAction, updateUserAction } from "@/app/actions/users";
 
 const userFormSchema = z.object({
     name: z.string().min(2, {
@@ -48,6 +64,7 @@ const userFormSchema = z.object({
     role: z.string({
         required_error: "Por favor seleccione un rol.",
     }),
+    establecimiento: z.string().optional(),
 }).refine((data) => {
     // If it's a new user (no ID logic handled outside, but here we assume if password is provided it must match)
     if (data.password && data.password !== data.passwordConfirm) {
@@ -70,6 +87,21 @@ interface UserDialogProps {
 
 export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogProps) {
     const [loading, setLoading] = useState(false);
+    const [establecimientos, setEstablecimientos] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchEstablecimientos = async () => {
+            try {
+                const records = await pb.collection("establecimientos").getFullList({ sort: "nombre" });
+                setEstablecimientos(records);
+            } catch (error) {
+                console.error("Failed to fetch establecimientos", error);
+            }
+        };
+        if (open) {
+            fetchEstablecimientos();
+        }
+    }, [open]);
 
     const form = useForm<UserFormValues>({
         resolver: zodResolver(userFormSchema),
@@ -79,6 +111,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
             password: "",
             passwordConfirm: "",
             role: "User",
+            establecimiento: "",
         },
     });
 
@@ -88,6 +121,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                establecimiento: user.establecimiento || "none",
                 password: "",
                 passwordConfirm: "",
             });
@@ -98,6 +132,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
                 password: "",
                 passwordConfirm: "",
                 role: "User",
+                establecimiento: "none",
             });
         }
     }, [user, form]);
@@ -105,48 +140,50 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
     const onSubmit = async (data: UserFormValues) => {
         setLoading(true);
         try {
-            const payload: any = {
-                name: data.name,
-                email: data.email,
-                role: data.role,
-                emailVisibility: true,
-                verified: true,
-            };
-
-            if (data.password) {
-                payload.password = data.password;
-                payload.passwordConfirm = data.passwordConfirm;
-            }
+            const establecimiento = (data.establecimiento && data.establecimiento !== "none")
+                ? data.establecimiento
+                : null;
 
             if (user) {
-                await pb.collection("users").update(user.id, payload);
+                const payload: any = {
+                    name: data.name,
+                    email: data.email,
+                    role: data.role,
+                    establecimiento,
+                    emailVisibility: true,
+                };
+                if (data.password) {
+                    payload.password = data.password;
+                    payload.passwordConfirm = data.passwordConfirm;
+                }
+                const result = await updateUserAction(user.id, payload);
+                if (!result.success) throw new Error(result.error);
                 toast.success("Usuario actualizado correctamente");
             } else {
-                // Create new user
-                // Password is required for new users
                 if (!data.password) {
                     form.setError("password", { message: "La contraseña es obligatoria para nuevos usuarios" });
                     setLoading(false);
                     return;
                 }
-
-                await pb.collection("users").create(payload);
-                toast.success("Usuario creado correctamente");
+                const result = await createUserAction({
+                    name: data.name,
+                    email: data.email,
+                    password: data.password,
+                    passwordConfirm: data.passwordConfirm ?? data.password,
+                    role: data.role,
+                    establecimiento,
+                    emailVisibility: true,
+                });
+                if (!result.success) throw new Error(result.error);
+                toast.success("Usuario creado y verificado correctamente");
             }
 
             onSuccess();
             onOpenChange(false);
         } catch (error: any) {
-            console.error("Full error object:", error);
-            console.error("Response data:", error.response?.data);
-
-            let errorMessage = error.message || "Por favor verifica los datos ingresados.";
-            if (error.response?.data) {
-                errorMessage = "Error PB: " + JSON.stringify(error.response.data);
-            }
-
+            console.error("Error al guardar usuario:", error);
             toast.error(user ? "Error al actualizar usuario" : "Error al crear usuario", {
-                description: errorMessage,
+                description: error.message || "Por favor verifica los datos ingresados.",
             });
         } finally {
             setLoading(false);
@@ -241,6 +278,70 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
                                     <FormMessage />
                                 </FormItem>
                             )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="establecimiento"
+                            render={({ field }) => {
+                                const [popoverOpen, setPopoverOpen] = useState(false);
+                                const selectedEst = establecimientos.find((e) => e.id === field.value);
+                                return (
+                                    <FormItem>
+                                        <FormLabel>Establecimiento (Opcional)</FormLabel>
+                                        <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                                            <PopoverTrigger asChild>
+                                                <FormControl>
+                                                    <Button
+                                                        variant="outline"
+                                                        role="combobox"
+                                                        className={cn(
+                                                            "w-full justify-between font-normal",
+                                                            !selectedEst && "text-muted-foreground",
+                                                        )}
+                                                    >
+                                                        {selectedEst ? selectedEst.nombre : "Seleccione un establecimiento"}
+                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                    </Button>
+                                                </FormControl>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-full p-0" align="start">
+                                                <Command>
+                                                    <CommandInput placeholder="Buscar establecimiento..." />
+                                                    <CommandList onWheel={(e) => e.stopPropagation()}>
+                                                        <CommandEmpty>No se encontraron resultados.</CommandEmpty>
+                                                        <CommandGroup>
+                                                            <CommandItem
+                                                                value="none"
+                                                                onSelect={() => {
+                                                                    field.onChange("none");
+                                                                    setPopoverOpen(false);
+                                                                }}
+                                                            >
+                                                                <Check className={cn("mr-2 h-4 w-4", field.value === "none" || !field.value ? "opacity-100" : "opacity-0")} />
+                                                                Sin establecimiento
+                                                            </CommandItem>
+                                                            {establecimientos.map((est) => (
+                                                                <CommandItem
+                                                                    key={est.id}
+                                                                    value={est.nombre}
+                                                                    onSelect={() => {
+                                                                        field.onChange(est.id);
+                                                                        setPopoverOpen(false);
+                                                                    }}
+                                                                >
+                                                                    <Check className={cn("mr-2 h-4 w-4", field.value === est.id ? "opacity-100" : "opacity-0")} />
+                                                                    {est.nombre}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+                                        <FormMessage />
+                                    </FormItem>
+                                );
+                            }}
                         />
                         <DialogFooter>
                             <Button type="submit" disabled={loading}>
