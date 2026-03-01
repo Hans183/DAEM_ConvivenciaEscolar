@@ -134,10 +134,6 @@ export const getColumns = ({ onEdit, onDelete }: GetColumnsProps): ColumnDef<Aut
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => navigator.clipboard.writeText(user.id)}>
-                            <Copy className="mr-2 h-4 w-4" />
-                            Copiar ID
-                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => onEdit(user)}>
                             <Edit className="mr-2 h-4 w-4" />

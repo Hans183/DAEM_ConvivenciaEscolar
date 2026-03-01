@@ -55,18 +55,18 @@ import type { DecRecord } from "./columns";
 
 const antecedentesOptions = [
     "Nada.",
-    "Se le pide que haga la tarea",
+    "Se le pide que haga la tarea.",
     "Momento de ocio.",
     "Se le llama la atención por indisciplina en aula.",
     "Conflicto con estudiante",
-    "Conflicto con profesor o asistente de la red.",
+    "Conflicto con profesor  o asistente de la red.",
     "Otra:"
 ];
 
 const conductasOptions = [
-    "Agresión física:¿a quién?",
+    "Agresión física: ¿a quién?",
     "Autoagresión.",
-    "Se escapa o se corre.",
+    "Se escapa o corre.",
     "Negativismo.",
     "Tira y/o rompe cosas.",
     "Escupe.",
@@ -76,14 +76,14 @@ const conductasOptions = [
 
 const consecuentesOptions = [
     "Se tranquiliza solo.",
-    "Es reconducido a la actividad inicial.",
+    "Es reconducido  a la actividad inicial.",
     "Es reprendido.",
-    "Se realiza tiempo fuera (dentro del aula, en un lugar reservador para reflexionar, separado del grupo).",
+    "Se realiza tiempo fuera (dentro del aula, en un lugar reservado para reflexionar, separado del grupo).",
     "Se le cambia la actividad.",
     "Se ignora.",
     "Se aplica reglamento interno: sanción formativa(alternativa).",
-    "Se acuerda entre familia y escuela, reducción de jornada.",
-    "Se aplica reglamento interno:sanción regular.",
+    "Se acuerda entre familia  y escuela, reducción de jornada.",
+    "Se aplica reglamento interno: sanción regular.",
     "Se solicita presencia de apoderado en establecimiento.",
     "Se solicita apoyo de centro asistencial.",
     "Se solicita retirar al estudiante del establecimiento educacional.",
@@ -137,6 +137,7 @@ const decFormSchema = z.object({
     funciona_medida: z.boolean().default(false),
     propuesta_mejora: z.string().optional(),
     establecimiento: z.string().optional(),
+    nivel_dec: z.string().optional(),
 });
 
 type DecFormValues = z.infer<typeof decFormSchema>;
@@ -207,6 +208,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
             funciona_medida: false,
             propuesta_mejora: "",
             establecimiento: "",
+            nivel_dec: "",
         },
     });
 
@@ -219,6 +221,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                 conductas: Array.isArray(record.conductas) ? record.conductas : [],
                 consecuentes: Array.isArray(record.consecuentes) ? record.consecuentes : [],
                 establecimiento: record.establecimiento || "",
+                nivel_dec: record.nivel_dec || "",
             });
         } else {
             form.reset({
@@ -250,6 +253,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                 funciona_medida: false,
                 propuesta_mejora: "",
                 establecimiento: isAdmin ? "" : (userEstablecimiento ?? ""),
+                nivel_dec: "",
             });
         }
     }, [record, form, open, isAdmin, userEstablecimiento]);
@@ -313,7 +317,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[700px] h-[90vh] flex flex-col p-0">
-                <DialogHeader className="px-6 py-4 border-b">
+                <DialogHeader className="px-6 py-6 border-b">
                     <div className="flex justify-between items-center">
                         <div>
                             <DialogTitle>{record ? "Editar DEC" : "Nuevo DEC"}</DialogTitle>
@@ -331,14 +335,82 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
 
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full overflow-hidden">
-                        <div className="flex-1 overflow-y-auto px-6 py-4">
+                        <div className="flex-1 overflow-y-auto px-6">
                             <div className="space-y-6">
                                 {/* PASO 1: Datos Generales y Personal */}
                                 {step === 1 && (
                                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                                        <div className="space-y-4">
+                                        <div className="space-y-2">
                                             <h3 className="text-lg font-medium border-b pb-2">Datos Generales</h3>
                                             <div className="grid grid-cols-2 gap-4">
+                                                {/* Campo Establecimiento */}
+                                                {isAdmin ? (
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="establecimiento"
+                                                        render={({ field }) => {
+                                                            const selected = establecimientos.find((e) => e.id === field.value);
+                                                            return (
+                                                                <FormItem className="flex flex-col">
+                                                                    <FormLabel>Establecimiento</FormLabel>
+                                                                    <Popover open={estComboboxOpen} onOpenChange={setEstComboboxOpen}>
+                                                                        <PopoverTrigger asChild>
+                                                                            <FormControl>
+                                                                                <Button
+                                                                                    variant="outline"
+                                                                                    role="combobox"
+                                                                                    className={cn(
+                                                                                        "w-full justify-between",
+                                                                                        !selected && "text-muted-foreground"
+                                                                                    )}
+                                                                                >
+                                                                                    {selected ? selected.nombre : "Seleccione un establecimiento"}
+                                                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                                                </Button>
+                                                                            </FormControl>
+                                                                        </PopoverTrigger>
+                                                                        <PopoverContent className="w-[600px] p-0" align="start">
+                                                                            <Command>
+                                                                                <CommandInput placeholder="Buscar establecimiento..." />
+                                                                                <CommandList onWheel={(e) => e.stopPropagation()}>
+                                                                                    <CommandEmpty>No se encontraron establecimientos.</CommandEmpty>
+                                                                                    <CommandGroup>
+                                                                                        {establecimientos.map((est) => (
+                                                                                            <CommandItem
+                                                                                                key={est.id}
+                                                                                                value={est.nombre}
+                                                                                                onSelect={() => {
+                                                                                                    form.setValue("establecimiento", est.id);
+                                                                                                    setEstComboboxOpen(false);
+                                                                                                }}
+                                                                                            >
+                                                                                                <Check
+                                                                                                    className={cn(
+                                                                                                        "mr-2 h-4 w-4",
+                                                                                                        est.id === field.value ? "opacity-100" : "opacity-0"
+                                                                                                    )}
+                                                                                                />
+                                                                                                {est.nombre}
+                                                                                            </CommandItem>
+                                                                                        ))}
+                                                                                    </CommandGroup>
+                                                                                </CommandList>
+                                                                            </Command>
+                                                                        </PopoverContent>
+                                                                    </Popover>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            );
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div className="space-y-1">
+                                                        <p className="text-sm font-medium">Establecimiento</p>
+                                                        <p className="flex h-9 w-full items-center rounded-md border border-input bg-muted px-3 py-1 text-sm text-muted-foreground">
+                                                            {establecimientos.find((e) => e.id === userEstablecimiento)?.nombre ?? "Sin establecimiento asignado"}
+                                                        </p>
+                                                    </div>
+                                                )}
                                                 <FormField control={form.control} name="dia" render={({ field }) => (
                                                     <FormItem>
                                                         <FormLabel>Fecha y Hora (Día)</FormLabel>
@@ -349,7 +421,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                                                 <FormField control={form.control} name="hora" render={({ field }) => (
                                                     <FormItem>
                                                         <FormLabel>Bloque/Hora</FormLabel>
-                                                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                                        <Select onValueChange={field.onChange} value={field.value}>
                                                             <FormControl>
                                                                 <SelectTrigger>
                                                                     <SelectValue placeholder="Seleccione un bloque" />
@@ -358,30 +430,20 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                                                             <SelectContent>
                                                                 <SelectItem value="8:00 - 9:30">8:00 - 9:30</SelectItem>
                                                                 <SelectItem value="Recreo 1">Recreo 1</SelectItem>
-                                                                <SelectItem value="09:45 - 11:20">09:45 - 11:20</SelectItem>
+                                                                <SelectItem value="09:45-11:20">09:45 - 11:20</SelectItem>
                                                                 <SelectItem value="Recreo 2">Recreo 2</SelectItem>
-                                                                <SelectItem value="11:30 - 13:00">11:30 - 13:00</SelectItem>
-                                                                <SelectItem value="Colación">Colación</SelectItem>
+                                                                <SelectItem value="11:30-13:00">11:30 - 13:00</SelectItem>
+                                                                <SelectItem value="Colacion">Colación</SelectItem>
                                                                 <SelectItem value="Otro">Otro</SelectItem>
                                                             </SelectContent>
                                                         </Select>
                                                         <FormMessage />
                                                     </FormItem>
                                                 )} />
-                                                {/* Campo condicional: Otro bloque/hora */}
-                                                {form.watch("hora") === "Otro" && (
-                                                    <FormField control={form.control} name="hora_otro" render={({ field }) => (
-                                                        <FormItem className="col-span-2">
-                                                            <FormLabel>Especificar bloque/hora</FormLabel>
-                                                            <FormControl><Input placeholder="Ingrese el bloque u hora" {...field} /></FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )} />
-                                                )}
                                                 <FormField control={form.control} name="asignaturas" render={({ field }) => (
-                                                    <FormItem className="col-span-2">
+                                                    <FormItem>
                                                         <FormLabel>Asignatura(s)</FormLabel>
-                                                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                                        <Select onValueChange={field.onChange} value={field.value}>
                                                             <FormControl>
                                                                 <SelectTrigger>
                                                                     <SelectValue placeholder="Seleccione una asignatura" />
@@ -395,7 +457,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                                                                 <SelectItem value="Inglés">Inglés</SelectItem>
                                                                 <SelectItem value="Artes Visuales">Artes Visuales</SelectItem>
                                                                 <SelectItem value="Música">Música</SelectItem>
-                                                                <SelectItem value="Eduacion Física">Eduacion Física</SelectItem>
+                                                                <SelectItem value="Educación Física">Educación Física</SelectItem>
                                                                 <SelectItem value="Religión">Religión</SelectItem>
                                                                 <SelectItem value="Tecnología">Tecnología</SelectItem>
                                                                 <SelectItem value="Lengua Indígena">Lengua Indígena</SelectItem>
@@ -405,7 +467,16 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                                                         <FormMessage />
                                                     </FormItem>
                                                 )} />
-                                                {/* Campo condicional: Otra asignatura */}
+                                                {/* Campos condicionales: siempre al final, col-span-2 */}
+                                                {form.watch("hora") === "Otro" && (
+                                                    <FormField control={form.control} name="hora_otro" render={({ field }) => (
+                                                        <FormItem className="col-span-2">
+                                                            <FormLabel>Especificar bloque/hora</FormLabel>
+                                                            <FormControl><Input placeholder="Ingrese el bloque u hora" {...field} /></FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )} />
+                                                )}
                                                 {form.watch("asignaturas") === "Otra:" && (
                                                     <FormField control={form.control} name="asignatura_otra" render={({ field }) => (
                                                         <FormItem className="col-span-2">
@@ -418,77 +489,30 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                                             </div>
                                         </div>
 
-                                        <div className="space-y-4">
-                                            <h3 className="text-lg font-medium border-b pb-2">Personal a Cargo</h3>
+                                        <div className="space-y-2">
+                                            <h3 className="text-lg font-medium border-b pb-2">Nivel DEC</h3>
+                                            <FormField control={form.control} name="nivel_dec" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Nivel de intensidad de la DEC:</FormLabel>
+                                                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                                        <FormControl>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Seleccione el nivel" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem value="Nivel 1">Nivel 1:(Puede regularse dentro de la sala, intensidad baja)</SelectItem>
+                                                            <SelectItem value="Nivel 2">Nivel 2:(Ausencia de autocontrol, intensidad media,P.E:fuga, rabieta o gritos no dirigidos)</SelectItem>
+                                                            <SelectItem value="Nivel 3">Nivel 3:(Descontrol con riesgo para si mismo y terceros)</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                        </div>
 
-                                            {/* Campo Establecimiento */}
-                                            {isAdmin ? (
-                                                <FormField
-                                                    control={form.control}
-                                                    name="establecimiento"
-                                                    render={({ field }) => {
-                                                        const selected = establecimientos.find((e) => e.id === field.value);
-                                                        return (
-                                                            <FormItem className="flex flex-col">
-                                                                <FormLabel>Establecimiento</FormLabel>
-                                                                <Popover open={estComboboxOpen} onOpenChange={setEstComboboxOpen}>
-                                                                    <PopoverTrigger asChild>
-                                                                        <FormControl>
-                                                                            <Button
-                                                                                variant="outline"
-                                                                                role="combobox"
-                                                                                className={cn(
-                                                                                    "w-full justify-between",
-                                                                                    !selected && "text-muted-foreground"
-                                                                                )}
-                                                                            >
-                                                                                {selected ? selected.nombre : "Seleccione un establecimiento"}
-                                                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                                            </Button>
-                                                                        </FormControl>
-                                                                    </PopoverTrigger>
-                                                                    <PopoverContent className="w-[600px] p-0" align="start">
-                                                                        <Command>
-                                                                            <CommandInput placeholder="Buscar establecimiento..." />
-                                                                            <CommandList onWheel={(e) => e.stopPropagation()}>
-                                                                                <CommandEmpty>No se encontraron establecimientos.</CommandEmpty>
-                                                                                <CommandGroup>
-                                                                                    {establecimientos.map((est) => (
-                                                                                        <CommandItem
-                                                                                            key={est.id}
-                                                                                            value={est.nombre}
-                                                                                            onSelect={() => {
-                                                                                                form.setValue("establecimiento", est.id);
-                                                                                                setEstComboboxOpen(false);
-                                                                                            }}
-                                                                                        >
-                                                                                            <Check
-                                                                                                className={cn(
-                                                                                                    "mr-2 h-4 w-4",
-                                                                                                    est.id === field.value ? "opacity-100" : "opacity-0"
-                                                                                                )}
-                                                                                            />
-                                                                                            {est.nombre}
-                                                                                        </CommandItem>
-                                                                                    ))}
-                                                                                </CommandGroup>
-                                                                            </CommandList>
-                                                                        </Command>
-                                                                    </PopoverContent>
-                                                                </Popover>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        );
-                                                    }}
-                                                />
-                                            ) : (
-                                                <div className="space-y-1">
-                                                    <p className="text-sm font-medium">Establecimiento</p>
-                                                    <p className="flex h-9 w-full items-center rounded-md border border-input bg-muted px-3 py-1 text-sm text-muted-foreground">
-                                                        {establecimientos.find((e) => e.id === userEstablecimiento)?.nombre ?? "Sin establecimiento asignado"}
-                                                    </p>
-                                                </div>
-                                            )}
+                                        <div className="space-y-2">
+                                            <h3 className="text-lg font-medium border-b pb-2">Personal a Cargo</h3>
 
                                             <div className="grid grid-cols-2 gap-4">
                                                 <FormField control={form.control} name="encargado_pi" render={({ field }) => (
@@ -508,7 +532,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                                 {/* PASO 2: Estudiante, Apoderado y Antecedentes */}
                                 {step === 2 && (
                                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                                        <div className="space-y-4">
+                                        <div className="space-y-2">
                                             <h3 className="text-lg font-medium border-b pb-2">Estudiante y Apoderado</h3>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <FormField control={form.control} name="nombre_estudiante" render={({ field }) => (
@@ -533,19 +557,20 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                                         </div>
 
 
-                                        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                                            <div className="space-y-4">
-                                                <h3 className="text-lg font-medium border-b pb-2">Antecedentes</h3>
+                                        <div className="space-y-2 animate-in fade-in slide-in-from-right-4 duration-300">
+                                            <div className="space-y-2">
+                                                <h3 className="text-lg font-medium border-b pb-2">Gatillante de la DEC</h3>
                                                 <div className="grid grid-cols-1 gap-4">
                                                     <FormField control={form.control} name="antecedentes" render={({ field }) => {
                                                         const selected: string[] = Array.isArray(field.value) ? field.value : [];
                                                         return (
                                                             <FormItem className="flex flex-col">
-                                                                <FormLabel>Seleccione los Antecedentes</FormLabel>
+                                                                <FormLabel>¿Qué estaba haciendo el estudiante?</FormLabel>
                                                                 <Popover open={antecedentesOpen} onOpenChange={setAntecedentesOpen}>
                                                                     <PopoverTrigger asChild>
                                                                         <FormControl>
                                                                             <Button
+                                                                                type="button"
                                                                                 variant="outline"
                                                                                 role="combobox"
                                                                                 className={cn("w-full min-h-10 h-auto justify-start flex-wrap gap-1 py-2", selected.length === 0 && "text-muted-foreground")}
@@ -630,11 +655,12 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                                                     const selected: string[] = Array.isArray(field.value) ? field.value : [];
                                                     return (
                                                         <FormItem className="flex flex-col">
-                                                            <FormLabel>Seleccione las Conductas</FormLabel>
+                                                            <FormLabel>¿Como responde a lo que se le pide?</FormLabel>
                                                             <Popover open={conductasOpen} onOpenChange={setConductasOpen}>
                                                                 <PopoverTrigger asChild>
                                                                     <FormControl>
                                                                         <Button
+                                                                            type="button"
                                                                             variant="outline"
                                                                             role="combobox"
                                                                             className={cn("w-full min-h-10 h-auto justify-start flex-wrap gap-1 py-2", selected.length === 0 && "text-muted-foreground")}
@@ -695,13 +721,15 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                                                         <FormItem><FormLabel>Especificar otra conducta</FormLabel><FormControl><Input placeholder="Ingrese la conducta" {...field} /></FormControl><FormMessage /></FormItem>
                                                     )} />
                                                 )}
-                                                <div className="grid grid-cols-2 gap-4 border-t pt-4">
+                                                {(form.watch("conductas") ?? []).includes("Agresión física:¿a quién?") && (
                                                     <FormField control={form.control} name="Agresion_fisica_conductas" render={({ field }) => (
-                                                        <FormItem><FormLabel>Detalles Agresión Física (Si aplica)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                                        <FormItem><FormLabel>¿A quién agredió?</FormLabel><FormControl><Input placeholder="Especifique a quién" {...field} /></FormControl><FormMessage /></FormItem>
                                                     )} />
+                                                )}
+                                                <div className="grid grid-cols-2 gap-4 border-t pt-4">
                                                     <FormField control={form.control} name="duracion_conductas" render={({ field }) => (
                                                         <FormItem><FormLabel>Duración de la conducta</FormLabel>
-                                                            <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                                            <Select onValueChange={field.onChange} value={field.value}>
                                                                 <FormControl><SelectTrigger><SelectValue placeholder="Seleccione duración" /></SelectTrigger></FormControl>
                                                                 <SelectContent>
                                                                     <SelectItem value="10 a 30 Minutos">10 a 30 Minutos</SelectItem>
@@ -735,6 +763,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                                                                 <PopoverTrigger asChild>
                                                                     <FormControl>
                                                                         <Button
+                                                                            type="button"
                                                                             variant="outline"
                                                                             role="combobox"
                                                                             className={cn("w-full min-h-10 h-auto justify-start flex-wrap gap-1 py-2", selected.length === 0 && "text-muted-foreground")}
@@ -889,7 +918,11 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                                             Siguiente Paso
                                         </Button>
                                     ) : (
-                                        <Button type="submit" disabled={loading}>
+                                        <Button
+                                            type="button"
+                                            onClick={form.handleSubmit(onSubmit)}
+                                            disabled={loading}
+                                        >
                                             {loading && <span className="mr-2 animate-spin">⏳</span>}
                                             {record ? "Guardar cambios" : "Crear registro DEC"}
                                         </Button>

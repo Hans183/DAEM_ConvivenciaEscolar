@@ -1,7 +1,8 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal, Pencil, Trash } from "lucide-react";
+import { ArrowUpDown, FileDown, MoreHorizontal, Pencil, Trash } from "lucide-react";
+import { generateDecPDF } from "./dec-pdf";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -48,6 +49,7 @@ export type DecRecord = {
     funciona_medida: boolean;
     propuesta_mejora?: string;
     establecimiento?: string;
+    nivel_dec?: string;
     expand?: {
         establecimiento?: { id: string; nombre: string };
     };
@@ -137,6 +139,23 @@ export const getColumns = ({ onEdit, onDelete, isAdmin }: ColumnsProps): ColumnD
         },
     } as ColumnDef<DecRecord>] : []),
     {
+        accessorKey: "nivel_dec",
+        header: "Nivel",
+        cell: ({ row }) => {
+            const nivel = row.original.nivel_dec;
+            if (!nivel) return <div className="text-muted-foreground">-</div>;
+            const color =
+                nivel === "Nivel 1" ? "bg-green-100 text-green-800 border-green-300"
+                    : nivel === "Nivel 2" ? "bg-yellow-100 text-yellow-800 border-yellow-300"
+                        : "bg-red-100 text-red-800 border-red-300";
+            return (
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${color}`}>
+                    {nivel}
+                </span>
+            );
+        },
+    },
+    {
         id: "actions",
         cell: ({ row }) => {
             const item = row.original;
@@ -151,21 +170,25 @@ export const getColumns = ({ onEdit, onDelete, isAdmin }: ColumnsProps): ColumnD
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => navigator.clipboard.writeText(item.id)}>
-                            Copiar ID
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => onEdit(item)}>
                             <Pencil className="mr-2 h-4 w-4" />
                             Editar
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                            onClick={() => onDelete(item)}
-                            className="text-red-600 focus:text-red-600"
-                        >
-                            <Trash className="mr-2 h-4 w-4" />
-                            Eliminar
+                        <DropdownMenuItem onClick={() => generateDecPDF(item)}>
+                            <FileDown className="mr-2 h-4 w-4" />
+                            Descargar PDF
                         </DropdownMenuItem>
+                        {isAdmin && (
+                            <>
+                                <DropdownMenuItem
+                                    onClick={() => onDelete(item)}
+                                    className="text-red-600 focus:text-red-600"
+                                >
+                                    <Trash className="mr-2 h-4 w-4" />
+                                    Eliminar
+                                </DropdownMenuItem>
+                            </>
+                        )}
                     </DropdownMenuContent>
                 </DropdownMenu>
             );

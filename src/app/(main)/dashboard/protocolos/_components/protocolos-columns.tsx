@@ -139,14 +139,8 @@ export const getColumns = ({ onEdit, onDelete, isAdmin }: GetColumnsProps): Colu
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                            <DropdownMenuItem
-                                onClick={() => navigator.clipboard.writeText(item.id)}
-                            >
-                                Copiar ID
-                            </DropdownMenuItem>
                             {isAdmin && (
                                 <>
-                                    <DropdownMenuSeparator />
                                     <DropdownMenuItem onClick={() => onEdit(item)}>
                                         <Pencil className="mr-2 h-4 w-4" />
                                         Editar
