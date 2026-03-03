@@ -141,7 +141,6 @@ export function NavMain({ items }: NavMainProps) {
 
   return (
     <>
-
       {items.map((group) => (
         <SidebarGroup key={group.id}>
           {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}

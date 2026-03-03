@@ -10,44 +10,29 @@
  * Best practices: CSS variables, semantic HTML, ARIA labels, keyboard navigation
  */
 
-"use client"
+"use client";
 
-import * as React from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import {
-  Home,
-  LayoutDashboard,
-  Users,
-  Settings,
-  FileText,
-  HelpCircle,
-  Menu,
-  X,
-  ChevronDown,
-} from "lucide-react"
+import * as React from "react";
 
-import { Button } from "@/components/ui/button"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
-import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { cn } from "@/lib/utils"
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+import { ChevronDown, FileText, HelpCircle, Home, LayoutDashboard, Menu, Settings, Users, X } from "lucide-react";
+
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
 
 // Navigation item type definition
 interface NavItem {
-  label: string
-  href: string
-  icon: React.ComponentType<{ className?: string }>
-  badge?: string
-  description?: string
+  label: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badge?: string;
+  description?: string;
 }
 
 // Navigation configuration
@@ -90,19 +75,19 @@ const navigationItems: NavItem[] = [
     icon: HelpCircle,
     description: "Help and support",
   },
-]
+];
 
 interface ResponsiveNavigationProps {
   user?: {
-    name: string
-    email: string
-    avatar?: string
-  }
+    name: string;
+    email: string;
+    avatar?: string;
+  };
 }
 
 export function ResponsiveNavigation({ user }: ResponsiveNavigationProps) {
-  const pathname = usePathname()
-  const [mobileOpen, setMobileOpen] = React.useState(false)
+  const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = React.useState(false);
 
   return (
     <>
@@ -115,26 +100,20 @@ export function ResponsiveNavigation({ user }: ResponsiveNavigationProps) {
 
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Toggle navigation menu"
-              >
+              <Button variant="ghost" size="icon" aria-label="Toggle navigation menu">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-[280px] sm:w-[320px]">
               <SheetHeader>
                 <SheetTitle>Navigation</SheetTitle>
-                <SheetDescription>
-                  Access all areas of your application
-                </SheetDescription>
+                <SheetDescription>Access all areas of your application</SheetDescription>
               </SheetHeader>
 
               <nav className="flex flex-col gap-2 mt-6" aria-label="Mobile navigation">
                 {navigationItems.map((item) => {
-                  const Icon = item.icon
-                  const isActive = pathname === item.href
+                  const Icon = item.icon;
+                  const isActive = pathname === item.href;
 
                   return (
                     <Link
@@ -144,9 +123,7 @@ export function ResponsiveNavigation({ user }: ResponsiveNavigationProps) {
                       className={cn(
                         "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                         "hover:bg-accent hover:text-accent-foreground",
-                        isActive
-                          ? "bg-accent text-accent-foreground font-medium"
-                          : "text-muted-foreground"
+                        isActive ? "bg-accent text-accent-foreground font-medium" : "text-muted-foreground",
                       )}
                     >
                       <Icon className="h-4 w-4" />
@@ -157,7 +134,7 @@ export function ResponsiveNavigation({ user }: ResponsiveNavigationProps) {
                         </Badge>
                       )}
                     </Link>
-                  )
+                  );
                 })}
               </nav>
 
@@ -169,7 +146,10 @@ export function ResponsiveNavigation({ user }: ResponsiveNavigationProps) {
                   <Avatar className="h-9 w-9">
                     <AvatarImage src={user.avatar} alt={user.name} />
                     <AvatarFallback>
-                      {user.name.split(" ").map((n) => n[0]).join("")}
+                      {user.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col">
@@ -197,8 +177,8 @@ export function ResponsiveNavigation({ user }: ResponsiveNavigationProps) {
         <nav className="flex-1 overflow-y-auto p-4" aria-label="Tablet navigation">
           <div className="flex flex-col gap-1">
             {navigationItems.map((item) => {
-              const Icon = item.icon
-              const isActive = pathname === item.href
+              const Icon = item.icon;
+              const isActive = pathname === item.href;
 
               return (
                 <Link
@@ -207,9 +187,7 @@ export function ResponsiveNavigation({ user }: ResponsiveNavigationProps) {
                   className={cn(
                     "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
                     "hover:bg-accent hover:text-accent-foreground",
-                    isActive
-                      ? "bg-accent text-accent-foreground font-medium"
-                      : "text-muted-foreground"
+                    isActive ? "bg-accent text-accent-foreground font-medium" : "text-muted-foreground",
                   )}
                   title={item.description}
                 >
@@ -221,7 +199,7 @@ export function ResponsiveNavigation({ user }: ResponsiveNavigationProps) {
                     </Badge>
                   )}
                 </Link>
-              )
+              );
             })}
           </div>
         </nav>
@@ -235,14 +213,15 @@ export function ResponsiveNavigation({ user }: ResponsiveNavigationProps) {
               <Avatar className="h-10 w-10">
                 <AvatarImage src={user.avatar} alt={user.name} />
                 <AvatarFallback>
-                  {user.name.split(" ").map((n) => n[0]).join("")}
+                  {user.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
                 </AvatarFallback>
               </Avatar>
               <div className="text-center">
                 <p className="text-sm font-medium truncate w-full">{user.name}</p>
-                <p className="text-xs text-muted-foreground truncate w-full">
-                  {user.email}
-                </p>
+                <p className="text-xs text-muted-foreground truncate w-full">{user.email}</p>
               </div>
             </div>
           </div>
@@ -262,8 +241,8 @@ export function ResponsiveNavigation({ user }: ResponsiveNavigationProps) {
 
             <nav className="flex items-center gap-1" aria-label="Main navigation">
               {navigationItems.map((item) => {
-                const Icon = item.icon
-                const isActive = pathname === item.href
+                const Icon = item.icon;
+                const isActive = pathname === item.href;
 
                 return (
                   <Link
@@ -272,9 +251,7 @@ export function ResponsiveNavigation({ user }: ResponsiveNavigationProps) {
                     className={cn(
                       "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
                       "hover:bg-accent hover:text-accent-foreground",
-                      isActive
-                        ? "bg-accent text-accent-foreground font-medium"
-                        : "text-muted-foreground"
+                      isActive ? "bg-accent text-accent-foreground font-medium" : "text-muted-foreground",
                     )}
                     title={item.description}
                   >
@@ -286,7 +263,7 @@ export function ResponsiveNavigation({ user }: ResponsiveNavigationProps) {
                       </Badge>
                     )}
                   </Link>
-                )
+                );
               })}
             </nav>
           </div>
@@ -303,7 +280,10 @@ export function ResponsiveNavigation({ user }: ResponsiveNavigationProps) {
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={user.avatar} alt={user.name} />
                   <AvatarFallback>
-                    {user.name.split(" ").map((n) => n[0]).join("")}
+                    {user.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col">
@@ -317,7 +297,7 @@ export function ResponsiveNavigation({ user }: ResponsiveNavigationProps) {
         </div>
       </header>
     </>
-  )
+  );
 }
 
 /**

@@ -1,7 +1,8 @@
 "use client";
 
-import { CircleUser, CreditCard, EllipsisVertical, LogOut, MessageSquareDot } from "lucide-react";
 import Link from "next/link";
+
+import { CircleUser, CreditCard, EllipsisVertical, LogOut, MessageSquareDot } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -76,13 +77,15 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => {
-              pb.authStore.clear();
-              // Borra explícitamente la cookie para que el middleware
-              // no redirija de vuelta al dashboard
-              document.cookie = "pb_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-              window.location.href = "/auth/login";
-            }}>
+            <DropdownMenuItem
+              onClick={() => {
+                pb.authStore.clear();
+                // Borra explícitamente la cookie para que el middleware
+                // no redirija de vuelta al dashboard
+                document.cookie = "pb_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                window.location.href = "/auth/login";
+              }}
+            >
               <LogOut />
               Cerrar sesión
             </DropdownMenuItem>

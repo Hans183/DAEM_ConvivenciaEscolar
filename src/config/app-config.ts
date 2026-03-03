@@ -8,7 +8,6 @@ export const APP_CONFIG = {
   copyright: `© ${currentYear}, Convivencia Escolar.`,
   meta: {
     title: "Convivencia Escolar - Sistema de registro de convivencia Escolar DAEM La Union",
-    description:
-      "Convivencia Escolar es un sistema de registro de convivencia Escolar DAEM La Union",
+    description: "Convivencia Escolar es un sistema de registro de convivencia Escolar DAEM La Union",
   },
 };

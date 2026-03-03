@@ -2,6 +2,7 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal, Pencil, Trash } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -35,10 +36,7 @@ export const getColumns = ({ onEdit, onDelete }: GetColumnsProps): ColumnDef<Est
     id: "select",
     header: ({ table }) => (
       <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
+        checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
         aria-label="Seleccionar todo"
         className="translate-y-[2px]"
@@ -60,27 +58,19 @@ export const getColumns = ({ onEdit, onDelete }: GetColumnsProps): ColumnDef<Est
   {
     accessorKey: "nombre",
     header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
+      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
         Nombre
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
-    cell: ({ row }) => (
-      <div className="font-medium">{row.getValue("nombre")}</div>
-    ),
+    cell: ({ row }) => <div className="font-medium">{row.getValue("nombre")}</div>,
   },
 
   /* RBD */
   {
     accessorKey: "rbd",
     header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
+      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
         RBD
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
@@ -92,29 +82,20 @@ export const getColumns = ({ onEdit, onDelete }: GetColumnsProps): ColumnDef<Est
   {
     accessorKey: "direccion",
     header: "Dirección",
-    cell: ({ row }) => (
-      <div className="text-muted-foreground">
-        {row.getValue("direccion")}
-      </div>
-    ),
+    cell: ({ row }) => <div className="text-muted-foreground">{row.getValue("direccion")}</div>,
   },
 
   /* Fecha creación */
   {
     accessorKey: "created",
     header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
+      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
         Fecha creación
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
     cell: ({ row }) => (
-      <div className="text-muted-foreground">
-        {new Date(row.getValue("created")).toLocaleDateString("es-CL")}
-      </div>
+      <div className="text-muted-foreground">{new Date(row.getValue("created")).toLocaleDateString("es-CL")}</div>
     ),
   },
 
@@ -140,10 +121,7 @@ export const getColumns = ({ onEdit, onDelete }: GetColumnsProps): ColumnDef<Est
               <Pencil className="mr-2 h-4 w-4" />
               Editar
             </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onDelete(item)}
-              className="text-red-600 focus:text-red-600"
-            >
+            <DropdownMenuItem onClick={() => onDelete(item)} className="text-red-600 focus:text-red-600">
               <Trash className="mr-2 h-4 w-4" />
               Eliminar
             </DropdownMenuItem>

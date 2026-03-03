@@ -9,26 +9,27 @@
  * - Semantic color usage
  */
 
-import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { Mail, MapPin, Calendar } from "lucide-react"
+import { Calendar, Mail, MapPin } from "lucide-react";
+
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 interface UserProfileProps {
   user: {
-    id: string
-    name: string
-    email: string
-    avatar?: string
-    role: string
-    location: string
-    joinedDate: string
-    isVerified: boolean
-  }
-  onMessage?: () => void
-  onViewProfile?: () => void
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string;
+    role: string;
+    location: string;
+    joinedDate: string;
+    isVerified: boolean;
+  };
+  onMessage?: () => void;
+  onViewProfile?: () => void;
 }
 
 export function UserProfile({ user, onMessage, onViewProfile }: UserProfileProps) {
@@ -39,8 +40,8 @@ export function UserProfile({ user, onMessage, onViewProfile }: UserProfileProps
       .map((n) => n[0])
       .join("")
       .toUpperCase()
-      .slice(0, 2)
-  }
+      .slice(0, 2);
+  };
 
   return (
     <Card className="w-full max-w-md">
@@ -84,33 +85,23 @@ export function UserProfile({ user, onMessage, onViewProfile }: UserProfileProps
 
           <div className="flex items-center gap-3 text-sm">
             <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">
-              Joined {new Date(user.joinedDate).toLocaleDateString()}
-            </span>
+            <span className="text-muted-foreground">Joined {new Date(user.joinedDate).toLocaleDateString()}</span>
           </div>
         </div>
 
         {/* Actions */}
         <div className="flex gap-2 pt-2">
-          <Button
-            variant="default"
-            className="flex-1"
-            onClick={onMessage}
-          >
+          <Button variant="default" className="flex-1" onClick={onMessage}>
             <Mail className="mr-2 h-4 w-4" />
             Message
           </Button>
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={onViewProfile}
-          >
+          <Button variant="outline" className="flex-1" onClick={onViewProfile}>
             View Profile
           </Button>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 /**

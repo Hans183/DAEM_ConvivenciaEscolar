@@ -12,56 +12,28 @@
  * Best practices: Type-safe validation, error handling, accessibility
  */
 
-"use client"
+"use client";
 
-import * as React from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import {
-  ChevronLeft,
-  ChevronRight,
-  Check,
-  Upload,
-  X,
-  FileText,
-  AlertCircle,
-} from "lucide-react"
+import * as React from "react";
 
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Textarea } from "@/components/ui/textarea"
-import { Progress } from "@/components/ui/progress"
-import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { cn } from "@/lib/utils"
+import { zodResolver } from "@hookform/resolvers/zod";
+import { AlertCircle, Check, ChevronLeft, ChevronRight, FileText, Upload, X } from "lucide-react";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 // Form schema with validation
 const formSchema = z.object({
@@ -94,9 +66,9 @@ const formSchema = z.object({
 
   // File upload (optional in schema, but can be required)
   resume: z.any().optional(),
-})
+});
 
-type FormData = z.infer<typeof formSchema>
+type FormData = z.infer<typeof formSchema>;
 
 // Step configuration
 const steps = [
@@ -115,7 +87,7 @@ const steps = [
     title: "Preferences",
     description: "Interests and settings",
   },
-]
+];
 
 // Interest options
 const interestOptions = [
@@ -125,16 +97,16 @@ const interestOptions = [
   { id: "sales", label: "Sales" },
   { id: "management", label: "Management" },
   { id: "analytics", label: "Analytics" },
-]
+];
 
 interface ComplexFormProps {
-  onSubmit?: (data: FormData) => void | Promise<void>
+  onSubmit?: (data: FormData) => void | Promise<void>;
 }
 
 export function ComplexForm({ onSubmit }: ComplexFormProps) {
-  const [currentStep, setCurrentStep] = React.useState(1)
-  const [isSubmitting, setIsSubmitting] = React.useState(false)
-  const [uploadedFile, setUploadedFile] = React.useState<File | null>(null)
+  const [currentStep, setCurrentStep] = React.useState(1);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [uploadedFile, setUploadedFile] = React.useState<File | null>(null);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -155,54 +127,54 @@ export function ComplexForm({ onSubmit }: ComplexFormProps) {
       newsletter: false,
       terms: false,
     },
-  })
+  });
 
-  const isCurrentlyEmployed = form.watch("isCurrentlyEmployed")
+  const isCurrentlyEmployed = form.watch("isCurrentlyEmployed");
 
   // Calculate progress percentage
-  const progress = (currentStep / steps.length) * 100
+  const progress = (currentStep / steps.length) * 100;
 
   // Handle next step
   const handleNext = async () => {
-    let fieldsToValidate: (keyof FormData)[] = []
+    let fieldsToValidate: (keyof FormData)[] = [];
 
     switch (currentStep) {
       case 1:
-        fieldsToValidate = ["firstName", "lastName", "email", "phone", "dateOfBirth"]
-        break
+        fieldsToValidate = ["firstName", "lastName", "email", "phone", "dateOfBirth"];
+        break;
       case 2:
-        fieldsToValidate = ["occupation", "yearsOfExperience", "employmentType"]
+        fieldsToValidate = ["occupation", "yearsOfExperience", "employmentType"];
         if (isCurrentlyEmployed) {
-          fieldsToValidate.push("company")
+          fieldsToValidate.push("company");
         }
-        break
+        break;
       case 3:
-        fieldsToValidate = ["interests", "skillLevel", "bio", "terms"]
-        break
+        fieldsToValidate = ["interests", "skillLevel", "bio", "terms"];
+        break;
     }
 
-    const isValid = await form.trigger(fieldsToValidate)
+    const isValid = await form.trigger(fieldsToValidate);
     if (isValid) {
-      setCurrentStep((prev) => Math.min(prev + 1, steps.length))
+      setCurrentStep((prev) => Math.min(prev + 1, steps.length));
     }
-  }
+  };
 
   // Handle previous step
   const handlePrevious = () => {
-    setCurrentStep((prev) => Math.max(prev - 1, 1))
-  }
+    setCurrentStep((prev) => Math.max(prev - 1, 1));
+  };
 
   // Handle file upload
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
+    const file = event.target.files?.[0];
     if (file) {
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         form.setError("resume", {
           type: "manual",
           message: "File size must be less than 5MB",
-        })
-        return
+        });
+        return;
       }
 
       // Validate file type
@@ -210,53 +182,51 @@ export function ComplexForm({ onSubmit }: ComplexFormProps) {
         "application/pdf",
         "application/msword",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      ]
+      ];
       if (!allowedTypes.includes(file.type)) {
         form.setError("resume", {
           type: "manual",
           message: "Only PDF and DOC/DOCX files are allowed",
-        })
-        return
+        });
+        return;
       }
 
-      setUploadedFile(file)
-      form.setValue("resume", file)
-      form.clearErrors("resume")
+      setUploadedFile(file);
+      form.setValue("resume", file);
+      form.clearErrors("resume");
     }
-  }
+  };
 
   // Handle form submission
   const handleSubmit = async (data: FormData) => {
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
       // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       if (onSubmit) {
-        await onSubmit(data)
+        await onSubmit(data);
       } else {
-        console.log("Form submitted:", data)
+        console.log("Form submitted:", data);
       }
 
       // Reset form on success
-      form.reset()
-      setCurrentStep(1)
-      setUploadedFile(null)
+      form.reset();
+      setCurrentStep(1);
+      setUploadedFile(null);
     } catch (error) {
-      console.error("Form submission error:", error)
+      console.error("Form submission error:", error);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <div className="w-full max-w-4xl mx-auto">
       <Card>
         <CardHeader>
           <CardTitle>Registration Form</CardTitle>
-          <CardDescription>
-            Complete all steps to finish your registration
-          </CardDescription>
+          <CardDescription>Complete all steps to finish your registration</CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-6">
@@ -282,8 +252,8 @@ export function ComplexForm({ onSubmit }: ComplexFormProps) {
                       currentStep > step.id
                         ? "border-primary bg-primary text-primary-foreground"
                         : currentStep === step.id
-                        ? "border-primary bg-background text-primary"
-                        : "border-muted bg-background text-muted-foreground"
+                          ? "border-primary bg-background text-primary"
+                          : "border-muted bg-background text-muted-foreground",
                     )}
                   >
                     {currentStep > step.id ? (
@@ -294,18 +264,11 @@ export function ComplexForm({ onSubmit }: ComplexFormProps) {
                   </div>
                   <div className="text-center hidden sm:block">
                     <p className="text-sm font-medium">{step.title}</p>
-                    <p className="text-xs text-muted-foreground hidden md:block">
-                      {step.description}
-                    </p>
+                    <p className="text-xs text-muted-foreground hidden md:block">{step.description}</p>
                   </div>
                 </div>
                 {index < steps.length - 1 && (
-                  <Separator
-                    className={cn(
-                      "flex-1 mx-2",
-                      currentStep > step.id ? "bg-primary" : "bg-muted"
-                    )}
-                  />
+                  <Separator className={cn("flex-1 mx-2", currentStep > step.id ? "bg-primary" : "bg-muted")} />
                 )}
               </React.Fragment>
             ))}
@@ -356,15 +319,9 @@ export function ComplexForm({ onSubmit }: ComplexFormProps) {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input
-                            type="email"
-                            placeholder="john.doe@example.com"
-                            {...field}
-                          />
+                          <Input type="email" placeholder="john.doe@example.com" {...field} />
                         </FormControl>
-                        <FormDescription>
-                          We'll never share your email with anyone else
-                        </FormDescription>
+                        <FormDescription>We'll never share your email with anyone else</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -411,26 +368,17 @@ export function ComplexForm({ onSubmit }: ComplexFormProps) {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Occupation</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select your occupation" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="software-engineer">
-                              Software Engineer
-                            </SelectItem>
+                            <SelectItem value="software-engineer">Software Engineer</SelectItem>
                             <SelectItem value="designer">Designer</SelectItem>
-                            <SelectItem value="product-manager">
-                              Product Manager
-                            </SelectItem>
-                            <SelectItem value="data-scientist">
-                              Data Scientist
-                            </SelectItem>
+                            <SelectItem value="product-manager">Product Manager</SelectItem>
+                            <SelectItem value="data-scientist">Data Scientist</SelectItem>
                             <SelectItem value="marketing">Marketing</SelectItem>
                             <SelectItem value="other">Other</SelectItem>
                           </SelectContent>
@@ -446,16 +394,11 @@ export function ComplexForm({ onSubmit }: ComplexFormProps) {
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                         <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
+                          <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                         </FormControl>
                         <div className="space-y-1 leading-none">
                           <FormLabel>I am currently employed</FormLabel>
-                          <FormDescription>
-                            Check this if you're working at a company
-                          </FormDescription>
+                          <FormDescription>Check this if you're working at a company</FormDescription>
                         </div>
                       </FormItem>
                     )}
@@ -485,10 +428,7 @@ export function ComplexForm({ onSubmit }: ComplexFormProps) {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Years of Experience</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select years" />
@@ -512,10 +452,7 @@ export function ComplexForm({ onSubmit }: ComplexFormProps) {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Employment Type</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue />
@@ -552,12 +489,7 @@ export function ComplexForm({ onSubmit }: ComplexFormProps) {
                                 id="resume-upload"
                               />
                               <label htmlFor="resume-upload">
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  className="cursor-pointer"
-                                  asChild
-                                >
+                                <Button type="button" variant="outline" className="cursor-pointer" asChild>
                                   <span>
                                     <Upload className="mr-2 h-4 w-4" />
                                     Choose File
@@ -567,17 +499,15 @@ export function ComplexForm({ onSubmit }: ComplexFormProps) {
                               {uploadedFile && (
                                 <div className="flex items-center gap-2 text-sm">
                                   <FileText className="h-4 w-4 text-muted-foreground" />
-                                  <span className="truncate max-w-[200px]">
-                                    {uploadedFile.name}
-                                  </span>
+                                  <span className="truncate max-w-[200px]">{uploadedFile.name}</span>
                                   <Button
                                     type="button"
                                     variant="ghost"
                                     size="icon"
                                     className="h-6 w-6"
                                     onClick={() => {
-                                      setUploadedFile(null)
-                                      form.setValue("resume", undefined)
+                                      setUploadedFile(null);
+                                      form.setValue("resume", undefined);
                                     }}
                                   >
                                     <X className="h-4 w-4" />
@@ -587,9 +517,7 @@ export function ComplexForm({ onSubmit }: ComplexFormProps) {
                             </div>
                           </div>
                         </FormControl>
-                        <FormDescription>
-                          Upload your resume (PDF, DOC, or DOCX, max 5MB)
-                        </FormDescription>
+                        <FormDescription>Upload your resume (PDF, DOC, or DOCX, max 5MB)</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -606,9 +534,7 @@ export function ComplexForm({ onSubmit }: ComplexFormProps) {
                     render={() => (
                       <FormItem>
                         <FormLabel>Areas of Interest</FormLabel>
-                        <FormDescription>
-                          Select all that apply to you
-                        </FormDescription>
+                        <FormDescription>Select all that apply to you</FormDescription>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
                           {interestOptions.map((option) => (
                             <FormField
@@ -623,17 +549,11 @@ export function ComplexForm({ onSubmit }: ComplexFormProps) {
                                       onCheckedChange={(checked) => {
                                         return checked
                                           ? field.onChange([...field.value, option.id])
-                                          : field.onChange(
-                                              field.value?.filter(
-                                                (value) => value !== option.id
-                                              )
-                                            )
+                                          : field.onChange(field.value?.filter((value) => value !== option.id));
                                       }}
                                     />
                                   </FormControl>
-                                  <FormLabel className="font-normal cursor-pointer">
-                                    {option.label}
-                                  </FormLabel>
+                                  <FormLabel className="font-normal cursor-pointer">{option.label}</FormLabel>
                                 </FormItem>
                               )}
                             />
@@ -660,9 +580,7 @@ export function ComplexForm({ onSubmit }: ComplexFormProps) {
                               <FormControl>
                                 <RadioGroupItem value="beginner" />
                               </FormControl>
-                              <FormLabel className="font-normal cursor-pointer">
-                                Beginner - Just starting out
-                              </FormLabel>
+                              <FormLabel className="font-normal cursor-pointer">Beginner - Just starting out</FormLabel>
                             </FormItem>
                             <FormItem className="flex items-center space-x-3 space-y-0">
                               <FormControl>
@@ -684,9 +602,7 @@ export function ComplexForm({ onSubmit }: ComplexFormProps) {
                               <FormControl>
                                 <RadioGroupItem value="expert" />
                               </FormControl>
-                              <FormLabel className="font-normal cursor-pointer">
-                                Expert - Master of the craft
-                              </FormLabel>
+                              <FormLabel className="font-normal cursor-pointer">Expert - Master of the craft</FormLabel>
                             </FormItem>
                           </RadioGroup>
                         </FormControl>
@@ -708,9 +624,7 @@ export function ComplexForm({ onSubmit }: ComplexFormProps) {
                             {...field}
                           />
                         </FormControl>
-                        <FormDescription>
-                          {field.value.length}/500 characters
-                        </FormDescription>
+                        <FormDescription>{field.value.length}/500 characters</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -722,16 +636,11 @@ export function ComplexForm({ onSubmit }: ComplexFormProps) {
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                         <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
+                          <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                         </FormControl>
                         <div className="space-y-1 leading-none">
                           <FormLabel>Subscribe to newsletter</FormLabel>
-                          <FormDescription>
-                            Receive updates and news via email
-                          </FormDescription>
+                          <FormDescription>Receive updates and news via email</FormDescription>
                         </div>
                       </FormItem>
                     )}
@@ -743,18 +652,12 @@ export function ComplexForm({ onSubmit }: ComplexFormProps) {
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                         <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
+                          <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                         </FormControl>
                         <div className="space-y-1 leading-none">
                           <FormLabel className="text-sm">
                             I accept the{" "}
-                            <a
-                              href="#"
-                              className="underline underline-offset-4 hover:text-primary"
-                            >
+                            <a href="#" className="underline underline-offset-4 hover:text-primary">
                               terms and conditions
                             </a>
                           </FormLabel>
@@ -767,9 +670,7 @@ export function ComplexForm({ onSubmit }: ComplexFormProps) {
                   {isSubmitting && (
                     <Alert>
                       <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        Submitting your registration...
-                      </AlertDescription>
+                      <AlertDescription>Submitting your registration...</AlertDescription>
                     </Alert>
                   )}
                 </div>
@@ -791,12 +692,7 @@ export function ComplexForm({ onSubmit }: ComplexFormProps) {
           </Button>
 
           {currentStep < steps.length ? (
-            <Button
-              type="button"
-              onClick={handleNext}
-              disabled={isSubmitting}
-              className="w-full sm:w-auto"
-            >
+            <Button type="button" onClick={handleNext} disabled={isSubmitting} className="w-full sm:w-auto">
               Next
               <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
@@ -814,7 +710,7 @@ export function ComplexForm({ onSubmit }: ComplexFormProps) {
         </CardFooter>
       </Card>
     </div>
-  )
+  );
 }
 
 /**

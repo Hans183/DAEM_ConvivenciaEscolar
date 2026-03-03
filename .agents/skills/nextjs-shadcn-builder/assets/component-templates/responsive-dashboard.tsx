@@ -10,35 +10,27 @@
  * Best practices: Responsive grids, CSS variables, accessible charts placeholder
  */
 
-"use client"
+"use client";
 
-import * as React from "react"
+import type * as React from "react";
+
 import {
-  TrendingUp,
-  TrendingDown,
-  Users,
-  DollarSign,
-  ShoppingCart,
   Activity,
-  ArrowUpRight,
   ArrowDownRight,
-  MoreHorizontal,
+  ArrowUpRight,
+  DollarSign,
   Download,
-} from "lucide-react"
+  MoreHorizontal,
+  ShoppingCart,
+  TrendingDown,
+  TrendingUp,
+  Users,
+} from "lucide-react";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { Separator } from "@/components/ui/separator"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,38 +38,40 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/dropdown-menu";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 // Dashboard data types
 interface StatCardData {
-  title: string
-  value: string
-  change: number
-  changeLabel: string
-  icon: React.ComponentType<{ className?: string }>
+  title: string;
+  value: string;
+  change: number;
+  changeLabel: string;
+  icon: React.ComponentType<{ className?: string }>;
 }
 
 interface RecentActivity {
-  id: string
-  user: string
-  action: string
-  timestamp: string
-  avatar?: string
+  id: string;
+  user: string;
+  action: string;
+  timestamp: string;
+  avatar?: string;
 }
 
 interface Goal {
-  id: string
-  title: string
-  progress: number
-  target: string
-  current: string
+  id: string;
+  title: string;
+  progress: number;
+  target: string;
+  current: string;
 }
 
 interface ResponsiveDashboardProps {
-  stats?: StatCardData[]
-  recentActivity?: RecentActivity[]
-  goals?: Goal[]
+  stats?: StatCardData[];
+  recentActivity?: RecentActivity[];
+  goals?: Goal[];
 }
 
 // Default mock data
@@ -110,7 +104,7 @@ const defaultStats: StatCardData[] = [
     changeLabel: "from last hour",
     icon: Activity,
   },
-]
+];
 
 const defaultActivity: RecentActivity[] = [
   {
@@ -148,7 +142,7 @@ const defaultActivity: RecentActivity[] = [
     timestamp: "3 hours ago",
     avatar: "https://avatar.vercel.sh/sofia",
   },
-]
+];
 
 const defaultGoals: Goal[] = [
   {
@@ -172,12 +166,12 @@ const defaultGoals: Goal[] = [
     target: "90%",
     current: "88%",
   },
-]
+];
 
 // Stat Card Component
 function StatCard({ data }: { data: StatCardData }) {
-  const Icon = data.icon
-  const isPositive = data.change >= 0
+  const Icon = data.icon;
+  const isPositive = data.change >= 0;
 
   return (
     <Card>
@@ -193,14 +187,12 @@ function StatCard({ data }: { data: StatCardData }) {
           ) : (
             <ArrowDownRight className="h-3 w-3 text-red-500" />
           )}
-          <span className={isPositive ? "text-green-500" : "text-red-500"}>
-            {Math.abs(data.change)}%
-          </span>
+          <span className={isPositive ? "text-green-500" : "text-red-500"}>{Math.abs(data.change)}%</span>
           <span>{data.changeLabel}</span>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 // Recent Activity Card Component
@@ -238,22 +230,19 @@ function RecentActivityCard({ activities }: { activities: RecentActivity[] }) {
                 <Avatar className="h-9 w-9">
                   <AvatarImage src={activity.avatar} alt={activity.user} />
                   <AvatarFallback>
-                    {activity.user.split(" ").map((n) => n[0]).join("")}
+                    {activity.user
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 space-y-1">
                   <p className="text-sm font-medium">{activity.user}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {activity.action}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {activity.timestamp}
-                  </p>
+                  <p className="text-sm text-muted-foreground">{activity.action}</p>
+                  <p className="text-xs text-muted-foreground">{activity.timestamp}</p>
                 </div>
               </div>
-              {index < activities.length - 1 && (
-                <Separator className="mt-4" />
-              )}
+              {index < activities.length - 1 && <Separator className="mt-4" />}
             </div>
           ))}
         </div>
@@ -265,7 +254,7 @@ function RecentActivityCard({ activities }: { activities: RecentActivity[] }) {
         </Button>
       </CardFooter>
     </Card>
-  )
+  );
 }
 
 // Goals Card Component
@@ -300,7 +289,7 @@ function GoalsCard({ goals }: { goals: Goal[] }) {
         ))}
       </CardContent>
     </Card>
-  )
+  );
 }
 
 // Sales Chart Placeholder Card Component
@@ -321,12 +310,8 @@ function SalesChartCard() {
         <div className="h-[200px] md:h-[250px] flex items-center justify-center rounded-lg border border-dashed">
           <div className="text-center">
             <TrendingUp className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              Chart placeholder
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Integrate with your preferred charting library
-            </p>
+            <p className="text-sm text-muted-foreground">Chart placeholder</p>
+            <p className="text-xs text-muted-foreground mt-1">Integrate with your preferred charting library</p>
           </div>
         </div>
       </CardContent>
@@ -347,7 +332,7 @@ function SalesChartCard() {
         </div>
       </CardFooter>
     </Card>
-  )
+  );
 }
 
 // Main Dashboard Component
@@ -362,9 +347,7 @@ export function ResponsiveDashboard({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
-            Welcome back! Here's your business overview.
-          </p>
+          <p className="text-muted-foreground mt-1">Welcome back! Here's your business overview.</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline">
@@ -406,22 +389,18 @@ export function ResponsiveDashboard({
           <Card>
             <CardHeader>
               <CardTitle>Additional Metrics</CardTitle>
-              <CardDescription>
-                Space for more dashboard components
-              </CardDescription>
+              <CardDescription>Space for more dashboard components</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="h-[200px] flex items-center justify-center rounded-lg border border-dashed">
-                <p className="text-sm text-muted-foreground">
-                  Add more cards as needed
-                </p>
+                <p className="text-sm text-muted-foreground">Add more cards as needed</p>
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 /**

@@ -17,8 +17,7 @@ export function OverviewCards() {
           <CardTitle>New Leads</CardTitle>
           <CardDescription>Last Month</CardDescription>
         </CardHeader>
-        <CardContent className="size-full">
-        </CardContent>
+        <CardContent className="size-full" />
         <CardFooter className="flex items-center justify-between">
           <span className="font-semibold text-xl tabular-nums">635</span>
           <span className="font-medium text-green-500 text-sm">+54.6%</span>
@@ -30,8 +29,7 @@ export function OverviewCards() {
           <CardTitle>Proposals Sent</CardTitle>
           <CardDescription>Last Month</CardDescription>
         </CardHeader>
-        <CardContent className="flex-1 p-0">
-        </CardContent>
+        <CardContent className="flex-1 p-0" />
       </Card>
 
       <Card>
@@ -71,9 +69,7 @@ export function OverviewCards() {
           <CardTitle>Revenue Growth</CardTitle>
           <CardDescription>Year to Date (YTD)</CardDescription>
         </CardHeader>
-        <CardContent>
-
-        </CardContent>
+        <CardContent />
         <CardFooter>
           <p className="text-muted-foreground text-sm">+35% growth since last year</p>
         </CardFooter>

@@ -10,43 +10,28 @@
  * Best practices: Mobile-first design, touch-friendly targets, responsive overflow
  */
 
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
+
 import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Search,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
-  MoreHorizontal,
   Mail,
+  MoreHorizontal,
   Phone,
-} from "lucide-react"
+  Search,
+} from "lucide-react";
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,29 +39,32 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 // User data type
 interface User {
-  id: string
-  name: string
-  email: string
-  phone: string
-  role: "admin" | "user" | "manager"
-  status: "active" | "inactive" | "pending"
-  avatar?: string
-  joinedAt: string
-  lastActive: string
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: "admin" | "user" | "manager";
+  status: "active" | "inactive" | "pending";
+  avatar?: string;
+  joinedAt: string;
+  lastActive: string;
 }
 
 // Sort configuration
-type SortKey = keyof User
-type SortDirection = "asc" | "desc" | null
+type SortKey = keyof User;
+type SortDirection = "asc" | "desc" | null;
 
 interface ResponsiveDataTableProps {
-  data: User[]
-  itemsPerPage?: number
+  data: User[];
+  itemsPerPage?: number;
 }
 
 // Status badge variant mapping
@@ -84,84 +72,81 @@ const statusVariant = {
   active: "default" as const,
   inactive: "secondary" as const,
   pending: "outline" as const,
-}
+};
 
 // Role badge variant mapping
 const roleVariant = {
   admin: "destructive" as const,
   manager: "default" as const,
   user: "secondary" as const,
-}
+};
 
-export function ResponsiveDataTable({
-  data,
-  itemsPerPage = 10,
-}: ResponsiveDataTableProps) {
-  const [searchQuery, setSearchQuery] = React.useState("")
-  const [currentPage, setCurrentPage] = React.useState(1)
-  const [sortKey, setSortKey] = React.useState<SortKey | null>(null)
-  const [sortDirection, setSortDirection] = React.useState<SortDirection>(null)
+export function ResponsiveDataTable({ data, itemsPerPage = 10 }: ResponsiveDataTableProps) {
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [sortKey, setSortKey] = React.useState<SortKey | null>(null);
+  const [sortDirection, setSortDirection] = React.useState<SortDirection>(null);
 
   // Filter data based on search query
   const filteredData = React.useMemo(() => {
-    if (!searchQuery) return data
+    if (!searchQuery) return data;
 
-    const query = searchQuery.toLowerCase()
+    const query = searchQuery.toLowerCase();
     return data.filter(
       (user) =>
         user.name.toLowerCase().includes(query) ||
         user.email.toLowerCase().includes(query) ||
-        user.role.toLowerCase().includes(query)
-    )
-  }, [data, searchQuery])
+        user.role.toLowerCase().includes(query),
+    );
+  }, [data, searchQuery]);
 
   // Sort data
   const sortedData = React.useMemo(() => {
-    if (!sortKey || !sortDirection) return filteredData
+    if (!sortKey || !sortDirection) return filteredData;
 
     return [...filteredData].sort((a, b) => {
-      const aValue = a[sortKey]
-      const bValue = b[sortKey]
+      const aValue = a[sortKey];
+      const bValue = b[sortKey];
 
-      if (aValue < bValue) return sortDirection === "asc" ? -1 : 1
-      if (aValue > bValue) return sortDirection === "asc" ? 1 : -1
-      return 0
-    })
-  }, [filteredData, sortKey, sortDirection])
+      if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [filteredData, sortKey, sortDirection]);
 
   // Paginate data
   const paginatedData = React.useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage
-    return sortedData.slice(startIndex, startIndex + itemsPerPage)
-  }, [sortedData, currentPage, itemsPerPage])
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return sortedData.slice(startIndex, startIndex + itemsPerPage);
+  }, [sortedData, currentPage, itemsPerPage]);
 
-  const totalPages = Math.ceil(sortedData.length / itemsPerPage)
+  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
 
   // Handle sort
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
       if (sortDirection === "asc") {
-        setSortDirection("desc")
+        setSortDirection("desc");
       } else if (sortDirection === "desc") {
-        setSortKey(null)
-        setSortDirection(null)
+        setSortKey(null);
+        setSortDirection(null);
       }
     } else {
-      setSortKey(key)
-      setSortDirection("asc")
+      setSortKey(key);
+      setSortDirection("asc");
     }
-  }
+  };
 
   // Render sort icon
   const renderSortIcon = (key: SortKey) => {
     if (sortKey !== key) {
-      return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />
+      return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />;
     }
     if (sortDirection === "asc") {
-      return <ArrowUp className="ml-2 h-4 w-4" />
+      return <ArrowUp className="ml-2 h-4 w-4" />;
     }
-    return <ArrowDown className="ml-2 h-4 w-4" />
-  }
+    return <ArrowDown className="ml-2 h-4 w-4" />;
+  };
 
   return (
     <div className="w-full space-y-4">
@@ -173,16 +158,14 @@ export function ResponsiveDataTable({
             placeholder="Search users..."
             value={searchQuery}
             onChange={(e) => {
-              setSearchQuery(e.target.value)
-              setCurrentPage(1) // Reset to first page on search
+              setSearchQuery(e.target.value);
+              setCurrentPage(1); // Reset to first page on search
             }}
             className="pl-8"
           />
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground whitespace-nowrap">
-            {sortedData.length} users
-          </span>
+          <span className="text-sm text-muted-foreground whitespace-nowrap">{sortedData.length} users</span>
         </div>
       </div>
 
@@ -190,9 +173,7 @@ export function ResponsiveDataTable({
       <div className="md:hidden space-y-3">
         {paginatedData.length === 0 ? (
           <Card>
-            <CardContent className="py-8 text-center text-sm text-muted-foreground">
-              No users found
-            </CardContent>
+            <CardContent className="py-8 text-center text-sm text-muted-foreground">No users found</CardContent>
           </Card>
         ) : (
           paginatedData.map((user) => (
@@ -203,7 +184,10 @@ export function ResponsiveDataTable({
                     <Avatar className="h-10 w-10">
                       <AvatarImage src={user.avatar} alt={user.name} />
                       <AvatarFallback>
-                        {user.name.split(" ").map((n) => n[0]).join("")}
+                        {user.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
                       </AvatarFallback>
                     </Avatar>
                     <div>
@@ -223,9 +207,7 @@ export function ResponsiveDataTable({
                       <DropdownMenuItem>View profile</DropdownMenuItem>
                       <DropdownMenuItem>Send message</DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive">
-                        Deactivate
-                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive">Deactivate</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -256,67 +238,37 @@ export function ResponsiveDataTable({
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[250px]">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-2"
-                    onClick={() => handleSort("name")}
-                  >
+                  <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => handleSort("name")}>
                     User
                     {renderSortIcon("name")}
                   </Button>
                 </TableHead>
                 <TableHead className="hidden lg:table-cell">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-2"
-                    onClick={() => handleSort("email")}
-                  >
+                  <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => handleSort("email")}>
                     Contact
                     {renderSortIcon("email")}
                   </Button>
                 </TableHead>
                 <TableHead>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-2"
-                    onClick={() => handleSort("role")}
-                  >
+                  <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => handleSort("role")}>
                     Role
                     {renderSortIcon("role")}
                   </Button>
                 </TableHead>
                 <TableHead>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-2"
-                    onClick={() => handleSort("status")}
-                  >
+                  <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => handleSort("status")}>
                     Status
                     {renderSortIcon("status")}
                   </Button>
                 </TableHead>
                 <TableHead className="hidden xl:table-cell">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-2"
-                    onClick={() => handleSort("joinedAt")}
-                  >
+                  <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => handleSort("joinedAt")}>
                     Joined
                     {renderSortIcon("joinedAt")}
                   </Button>
                 </TableHead>
                 <TableHead className="hidden xl:table-cell">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-2"
-                    onClick={() => handleSort("lastActive")}
-                  >
+                  <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => handleSort("lastActive")}>
                     Last Active
                     {renderSortIcon("lastActive")}
                   </Button>
@@ -329,10 +281,7 @@ export function ResponsiveDataTable({
             <TableBody>
               {paginatedData.length === 0 ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={7}
-                    className="h-24 text-center text-muted-foreground"
-                  >
+                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                     No users found
                   </TableCell>
                 </TableRow>
@@ -344,14 +293,15 @@ export function ResponsiveDataTable({
                         <Avatar className="h-8 w-8">
                           <AvatarImage src={user.avatar} alt={user.name} />
                           <AvatarFallback>
-                            {user.name.split(" ").map((n) => n[0]).join("")}
+                            {user.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex flex-col">
                           <span className="font-medium">{user.name}</span>
-                          <span className="text-sm text-muted-foreground lg:hidden">
-                            {user.email}
-                          </span>
+                          <span className="text-sm text-muted-foreground lg:hidden">{user.email}</span>
                         </div>
                       </div>
                     </TableCell>
@@ -371,9 +321,7 @@ export function ResponsiveDataTable({
                       <Badge variant={roleVariant[user.role]}>{user.role}</Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={statusVariant[user.status]}>
-                        {user.status}
-                      </Badge>
+                      <Badge variant={statusVariant[user.status]}>{user.status}</Badge>
                     </TableCell>
                     <TableCell className="hidden xl:table-cell text-sm">
                       {new Date(user.joinedAt).toLocaleDateString()}
@@ -394,9 +342,7 @@ export function ResponsiveDataTable({
                           <DropdownMenuItem>View profile</DropdownMenuItem>
                           <DropdownMenuItem>Send message</DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive">
-                            Deactivate
-                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive">Deactivate</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -412,15 +358,9 @@ export function ResponsiveDataTable({
       {totalPages > 1 && (
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-sm text-muted-foreground">
-            Showing{" "}
-            <span className="font-medium">
-              {(currentPage - 1) * itemsPerPage + 1}
-            </span>{" "}
-            to{" "}
-            <span className="font-medium">
-              {Math.min(currentPage * itemsPerPage, sortedData.length)}
-            </span>{" "}
-            of <span className="font-medium">{sortedData.length}</span> results
+            Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{" "}
+            <span className="font-medium">{Math.min(currentPage * itemsPerPage, sortedData.length)}</span> of{" "}
+            <span className="font-medium">{sortedData.length}</span> results
           </div>
 
           <div className="flex items-center gap-2">
@@ -455,9 +395,7 @@ export function ResponsiveDataTable({
               variant="outline"
               size="icon"
               className="h-8 w-8"
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-              }
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
             >
               <ChevronRight className="h-4 w-4" />
@@ -477,7 +415,7 @@ export function ResponsiveDataTable({
         </div>
       )}
     </div>
-  )
+  );
 }
 
 /**

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -15,16 +16,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { pb } from "@/lib/pocketbase";
+
 import type { EstablecimientoActivation } from "./establecimientos-columns";
 
 const establecimientoFormSchema = z.object({
@@ -39,9 +34,7 @@ const establecimientoFormSchema = z.object({
   }),
 });
 
-type EstablecimientoFormValues = z.infer<
-  typeof establecimientoFormSchema
->;
+type EstablecimientoFormValues = z.infer<typeof establecimientoFormSchema>;
 
 interface EstablecimientoDialogProps {
   open: boolean;
@@ -50,12 +43,7 @@ interface EstablecimientoDialogProps {
   onSuccess: () => void;
 }
 
-export function EstablecimientoDialog({
-  open,
-  onOpenChange,
-  establecimiento,
-  onSuccess,
-}: EstablecimientoDialogProps) {
+export function EstablecimientoDialog({ open, onOpenChange, establecimiento, onSuccess }: EstablecimientoDialogProps) {
   const [loading, setLoading] = useState(false);
 
   const form = useForm<EstablecimientoFormValues>({
@@ -87,9 +75,7 @@ export function EstablecimientoDialog({
     setLoading(true);
     try {
       if (establecimiento) {
-        await pb
-          .collection("establecimientos")
-          .update(establecimiento.id, data);
+        await pb.collection("establecimientos").update(establecimiento.id, data);
         toast.success("Establecimiento actualizado correctamente");
       } else {
         await pb.collection("establecimientos").create(data);
@@ -100,15 +86,9 @@ export function EstablecimientoDialog({
       onOpenChange(false);
     } catch (error: any) {
       console.error(error);
-      toast.error(
-        establecimiento
-          ? "Error al actualizar establecimiento"
-          : "Error al crear establecimiento",
-        {
-          description:
-            error.message || "Por favor verifica los datos ingresados.",
-        }
-      );
+      toast.error(establecimiento ? "Error al actualizar establecimiento" : "Error al crear establecimiento", {
+        description: error.message || "Por favor verifica los datos ingresados.",
+      });
     } finally {
       setLoading(false);
     }
@@ -118,13 +98,9 @@ export function EstablecimientoDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>
-            {establecimiento ? "Editar Establecimiento" : "Agregar Establecimiento"}
-          </DialogTitle>
+          <DialogTitle>{establecimiento ? "Editar Establecimiento" : "Agregar Establecimiento"}</DialogTitle>
           <DialogDescription>
-            {establecimiento
-              ? "Actualiza los datos del establecimiento."
-              : "Crea un nuevo establecimiento."}
+            {establecimiento ? "Actualiza los datos del establecimiento." : "Crea un nuevo establecimiento."}
           </DialogDescription>
         </DialogHeader>
 
@@ -156,7 +132,7 @@ export function EstablecimientoDialog({
                     <Input
                       type="number"
                       {...field}
-                      value={field.value ?? ''}
+                      value={field.value ?? ""}
                       onChange={(e) => field.onChange(e.target.value)}
                     />
                   </FormControl>
@@ -164,7 +140,6 @@ export function EstablecimientoDialog({
                 </FormItem>
               )}
             />
-
 
             {/* Dirección */}
             <FormField
@@ -183,12 +158,7 @@ export function EstablecimientoDialog({
 
             {/* Botones */}
             <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={loading}
-              >
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
                 Cancelar
               </Button>
               <Button type="submit" disabled={loading}>

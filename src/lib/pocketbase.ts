@@ -1,4 +1,3 @@
+import PocketBase from "pocketbase";
 
-import PocketBase from 'pocketbase';
-
-export const pb = new PocketBase('https://apiconvivencia.daemlu.cl');
+export const pb = new PocketBase("https://apiconvivencia.daemlu.cl");

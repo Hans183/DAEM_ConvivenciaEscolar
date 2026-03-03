@@ -1,10 +1,4 @@
-import {
-  FileText,
-  LayoutDashboard,
-  type LucideIcon,
-  Users,
-  School,
-} from "lucide-react";
+import { FileText, LayoutDashboard, type LucideIcon, School, Users } from "lucide-react";
 
 export interface NavSubItem {
   title: string;

@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 
 import { CircleHelp, ClipboardList, Command, Database, File, Search, Settings } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
@@ -86,11 +86,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   // derived user object for NavUser, falling back to rootUser if not logged in
   // or mapping PB user fields to the expected format
-  const user = pbUser ? {
-    name: pbUser.name || pbUser.username || "User",
-    email: pbUser.email || "",
-    avatar: pbUser.avatar ? pb.files.getURL(pbUser, pbUser.avatar) : "",
-  } : rootUser;
+  const user = pbUser
+    ? {
+        name: pbUser.name || pbUser.username || "User",
+        email: pbUser.email || "",
+        avatar: pbUser.avatar ? pb.files.getURL(pbUser, pbUser.avatar) : "",
+      }
+    : rootUser;
 
   return (
     <Sidebar {...props} variant={variant} collapsible={collapsible}>
