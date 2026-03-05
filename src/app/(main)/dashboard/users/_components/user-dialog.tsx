@@ -9,7 +9,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { createUserAction, updateUserAction } from "@/app/actions/users";
+import { createUserAction, updateUserAction, type UpdateUserPayload } from "@/app/actions/users";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import {
@@ -73,12 +73,13 @@ interface UserDialogProps {
 
 export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogProps) {
   const [loading, setLoading] = useState(false);
-  const [establecimientos, setEstablecimientos] = useState<any[]>([]);
+  const [establecimientos, setEstablecimientos] = useState<{ id: string; nombre: string }[]>([]);
+  const [estComboboxOpen, setEstComboboxOpen] = useState(false);
 
   useEffect(() => {
     const fetchEstablecimientos = async () => {
       try {
-        const records = await pb.collection("establecimientos").getFullList({ sort: "nombre" });
+        const records = await pb.collection("establecimientos").getFullList<{ id: string; nombre: string }>({ sort: "nombre" });
         setEstablecimientos(records);
       } catch (error) {
         console.error("Failed to fetch establecimientos", error);
@@ -129,7 +130,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
       const establecimiento = data.establecimiento && data.establecimiento !== "none" ? data.establecimiento : null;
 
       if (user) {
-        const payload: any = {
+        const payload: UpdateUserPayload = {
           name: data.name,
           email: data.email,
           role: data.role,
@@ -160,11 +161,20 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
         });
         if (!result.success) throw new Error(result.error);
         toast.success("Usuario creado y verificado correctamente");
+        form.reset({
+          name: "",
+          email: "",
+          password: "",
+          passwordConfirm: "",
+          role: "User",
+          establecimiento: "none",
+        });
       }
 
       onSuccess();
       onOpenChange(false);
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as Error;
       console.error("Error al guardar usuario:", error);
       toast.error(user ? "Error al actualizar usuario" : "Error al crear usuario", {
         description: error.message || "Por favor verifica los datos ingresados.",
@@ -221,7 +231,11 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
                   <FormItem>
                     <FormLabel>Contraseña</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder={user ? "********" : "Requerido"} {...field} />
+                      <Input
+                        type={field.value && field.value.length > 0 ? "text" : "password"}
+                        placeholder={user ? "********" : "Requerido"}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -234,7 +248,11 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
                   <FormItem>
                     <FormLabel>Confirmar Contraseña</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder={user ? "********" : "Requerido"} {...field} />
+                      <Input
+                        type={field.value && field.value.length > 0 ? "text" : "password"}
+                        placeholder={user ? "********" : "Requerido"}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -267,12 +285,11 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
               control={form.control}
               name="establecimiento"
               render={({ field }) => {
-                const [popoverOpen, setPopoverOpen] = useState(false);
                 const selectedEst = establecimientos.find((e) => e.id === field.value);
                 return (
                   <FormItem>
                     <FormLabel>Establecimiento (Opcional)</FormLabel>
-                    <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                    <Popover open={estComboboxOpen} onOpenChange={setEstComboboxOpen}>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
@@ -298,7 +315,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
                                 value="none"
                                 onSelect={() => {
                                   field.onChange("none");
-                                  setPopoverOpen(false);
+                                  setEstComboboxOpen(false);
                                 }}
                               >
                                 <Check
@@ -315,7 +332,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
                                   value={est.nombre}
                                   onSelect={() => {
                                     field.onChange(est.id);
-                                    setPopoverOpen(false);
+                                    setEstComboboxOpen(false);
                                   }}
                                 >
                                   <Check
