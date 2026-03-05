@@ -49,6 +49,66 @@ const conductasOptions = [
   "Otro:",
 ];
 
+const cursosOptions = [
+  "Nivel Medio Menor A",
+  "Nivel Medio Mayor A",
+  "Nivel de Transición 1 A",
+  "Nivel de Transición 2 A",
+  "1er nivel de Transición (Pre-kinder) A",
+  "1er nivel de Transición (Pre-kinder) B",
+  "2° nivel de Transición (Kinder) A",
+  "2° nivel de Transición (Kinder) B",
+  "1° Básico A",
+  "1° Básico B",
+  "2° Básico A",
+  "2° Básico B",
+  "3° Básico A",
+  "3° Básico B",
+  "4° Básico A",
+  "5° Básico A",
+  "5° Básico B",
+  "6° Básico A",
+  "6° Básico B",
+  "7° Básico A",
+  "7° Básico B",
+  "7° Básico C",
+  "8° Básico A",
+  "8° Básico B",
+  "8° Básico C",
+  "1° Medio A",
+  "1° Medio B",
+  "1° Medio C",
+  "1° Medio D",
+  "1° Medio E",
+  "1° Medio F",
+  "2° Medio A",
+  "2° Medio B",
+  "2° Medio C",
+  "2° Medio D",
+  "2° Media E",
+  "3° Medio A",
+  "3° Medio B",
+  "3° Medio D",
+  "3° Medio E",
+  "4° Media A",
+  "4° Medio B",
+  "4° Medio C",
+  "4° Medio D",
+  "3° Medio A Enseñanza Media Técnico-Profesional Comercial niños",
+  "3° Medio B Enseñanza Media Técnico-Profesional Comercial niños",
+  "4° Medio A Enseñanza Media Técnico-Profesional Comercial niños",
+  "4° Medio B Enseñanza Media Técnico-Profesional Comercial niños",
+  "3° Medio C Enseñanza Media Técnico-Profesional Industrial niños",
+  "4° Medio C Enseñanza Media Técnico-Profesional Industrial niños",
+  "3° Medio B Enseñanza Media Técnico-Profesional Industrial niños",
+  "4° Medio B Enseñanza Media Técnico-Profesional Industrial niños",
+  "3° Medio A Enseñanza Media Técnico-Profesional Técnica niños",
+  "4° Medio A Enseñanza Media Técnico-Profesional Técnica niños",
+  "Laboral 1 A",
+  "Laboral 2 A",
+  "Laboral 3 A",
+];
+
 const consecuentesOptions = [
   "Se tranquiliza solo.",
   "Es reconducido  a la actividad inicial.",
@@ -380,7 +440,11 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                                           role="combobox"
                                           className={cn("w-full justify-between", !selected && "text-muted-foreground")}
                                         >
-                                          {selected ? selected.nombre : "Seleccione un establecimiento"}
+                                          {selected
+                                            ? selected.nombre.length > 40
+                                              ? `${selected.nombre.substring(0, 40)}...`
+                                              : selected.nombre
+                                            : "Seleccione un establecimiento"}
                                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                         </Button>
                                       </FormControl>
@@ -423,8 +487,11 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                           <div className="space-y-1">
                             <p className="font-medium text-sm">Establecimiento</p>
                             <p className="flex h-9 w-full items-center rounded-md border border-input bg-muted px-3 py-1 text-muted-foreground text-sm">
-                              {establecimientos.find((e) => e.id === userEstablecimiento)?.nombre ??
-                                "Sin establecimiento asignado"}
+                              {(() => {
+                                const nombre = establecimientos.find((e) => e.id === userEstablecimiento)?.nombre;
+                                if (!nombre) return "Sin establecimiento asignado";
+                                return nombre.length > 40 ? `${nombre.substring(0, 40)}...` : nombre;
+                              })()}
                             </p>
                           </div>
                         )}
@@ -713,31 +780,61 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                           control={form.control}
                           name="curso_estudiante"
                           render={({ field }) => (
-                            <FormItem>
+                            <FormItem className="flex flex-col pt-2">
                               <FormLabel>Curso</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Seleccione un curso" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="Pre-Kinder">Pre-Kinder</SelectItem>
-                                  <SelectItem value="Kinder">Kinder</SelectItem>
-                                  <SelectItem value="1° Básico">1° Básico</SelectItem>
-                                  <SelectItem value="2° Básico">2° Básico</SelectItem>
-                                  <SelectItem value="3° Básico">3° Básico</SelectItem>
-                                  <SelectItem value="4° Básico">4° Básico</SelectItem>
-                                  <SelectItem value="5° Básico">5° Básico</SelectItem>
-                                  <SelectItem value="6° Básico">6° Básico</SelectItem>
-                                  <SelectItem value="7° Básico">7° Básico</SelectItem>
-                                  <SelectItem value="8° Básico">8° Básico</SelectItem>
-                                  <SelectItem value="I Medio">I Medio</SelectItem>
-                                  <SelectItem value="II Medio">II Medio</SelectItem>
-                                  <SelectItem value="III Medio">III Medio</SelectItem>
-                                  <SelectItem value="IV Medio">IV Medio</SelectItem>
-                                </SelectContent>
-                              </Select>
+                              <Popover modal={true}>
+                                <PopoverTrigger asChild>
+                                  <FormControl>
+                                    <Button
+                                      variant="outline"
+                                      role="combobox"
+                                      className={cn(
+                                        "w-full justify-between",
+                                        !field.value && "text-muted-foreground",
+                                      )}
+                                    >
+                                      {field.value
+                                        ? cursosOptions.find((curso) => curso === field.value)
+                                        : "Seleccione un curso"}
+                                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                  </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[300px] p-0" align="start">
+                                  <Command
+                                    filter={(value, search) => {
+                                      const normalize = (str: string) =>
+                                        str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+                                      if (normalize(value).includes(normalize(search))) return 1;
+                                      return 0;
+                                    }}
+                                  >
+                                    <CommandInput placeholder="Buscar curso..." />
+                                    <CommandList className="max-h-[300px] overflow-y-auto">
+                                      <CommandEmpty>No se encontró el curso.</CommandEmpty>
+                                      <CommandGroup>
+                                        {cursosOptions.map((curso) => (
+                                          <CommandItem
+                                            value={curso}
+                                            key={curso}
+                                            onSelect={() => {
+                                              form.setValue("curso_estudiante", curso, { shouldValidate: true });
+                                            }}
+                                          >
+                                            <Check
+                                              className={cn(
+                                                "mr-2 h-4 w-4",
+                                                curso === field.value ? "opacity-100" : "opacity-0",
+                                              )}
+                                            />
+                                            {curso}
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    </CommandList>
+                                  </Command>
+                                </PopoverContent>
+                              </Popover>
                               <FormMessage />
                             </FormItem>
                           )}
