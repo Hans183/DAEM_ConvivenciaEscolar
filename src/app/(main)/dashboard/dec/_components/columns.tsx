@@ -62,9 +62,10 @@ interface ColumnsProps {
   onEdit: (record: DecRecord) => void;
   onDelete: (record: DecRecord) => void;
   isAdmin?: boolean;
+  isItinerante?: boolean;
 }
 
-export const getColumns = ({ onEdit, onDelete, isAdmin }: ColumnsProps): ColumnDef<DecRecord>[] => [
+export const getColumns = ({ onEdit, onDelete, isAdmin, isItinerante }: ColumnsProps): ColumnDef<DecRecord>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -124,7 +125,7 @@ export const getColumns = ({ onEdit, onDelete, isAdmin }: ColumnsProps): ColumnD
     header: "Apoderado",
     cell: ({ row }) => <div>{row.getValue("nombre_apoderado")}</div>,
   },
-  ...(isAdmin
+  ...(isAdmin || isItinerante
     ? [
         {
           accessorKey: "establecimiento",

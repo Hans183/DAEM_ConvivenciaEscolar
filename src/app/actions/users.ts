@@ -1,6 +1,6 @@
 "use server";
 
-import PocketBase from "pocketbase";
+import PocketBase, { ClientResponseError } from "pocketbase";
 
 // Initialize a server-side PocketBase instance using environment variables
 function getAdminPb() {
@@ -14,7 +14,7 @@ export interface CreateUserPayload {
   password: string;
   passwordConfirm: string;
   role: string;
-  establecimiento: string | null;
+  establecimiento: string[] | null;
   emailVisibility: boolean;
 }
 
@@ -24,7 +24,7 @@ export interface UpdateUserPayload {
   password?: string;
   passwordConfirm?: string;
   role: string;
-  establecimiento: string | null;
+  establecimiento: string[] | null;
   emailVisibility: boolean;
 }
 
@@ -39,9 +39,17 @@ export interface ActionResult {
  */
 export async function createUserAction(payload: CreateUserPayload): Promise<ActionResult> {
   const pb = getAdminPb();
+  
+  const adminEmail = process.env.PB_ADMIN_EMAIL;
+  const adminPassword = process.env.PB_ADMIN_PASSWORD;
+
+  if (!adminEmail || !adminPassword) {
+    return { success: false, error: "Missing required environment variables for admin authentication." };
+  }
+
   try {
     // Authenticate as admin to bypass verified restrictions
-    await pb.admins.authWithPassword(process.env.PB_ADMIN_EMAIL!, process.env.PB_ADMIN_PASSWORD!);
+    await pb.admins.authWithPassword(adminEmail, adminPassword);
 
     await pb.collection("users").create({
       ...payload,
@@ -49,8 +57,15 @@ export async function createUserAction(payload: CreateUserPayload): Promise<Acti
     });
 
     return { success: true };
-  } catch (error: any) {
-    const detail = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+  } catch (error) {
+    let detail = "An unknown error occurred";
+    if (error instanceof ClientResponseError) {
+      detail = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+    } else if (error instanceof Error) {
+      detail = error.message;
+    } else {
+      detail = String(error);
+    }
     return { success: false, error: detail };
   }
 }
@@ -60,15 +75,30 @@ export async function createUserAction(payload: CreateUserPayload): Promise<Acti
  */
 export async function updateUserAction(id: string, payload: UpdateUserPayload): Promise<ActionResult> {
   const pb = getAdminPb();
+
+  const adminEmail = process.env.PB_ADMIN_EMAIL;
+  const adminPassword = process.env.PB_ADMIN_PASSWORD;
+
+  if (!adminEmail || !adminPassword) {
+    return { success: false, error: "Missing required environment variables for admin authentication." };
+  }
+
   try {
     // Authenticate as admin to allow updating protected fields
-    await pb.admins.authWithPassword(process.env.PB_ADMIN_EMAIL!, process.env.PB_ADMIN_PASSWORD!);
+    await pb.admins.authWithPassword(adminEmail, adminPassword);
 
     await pb.collection("users").update(id, payload);
 
     return { success: true };
-  } catch (error: any) {
-    const detail = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+  } catch (error) {
+    let detail = "An unknown error occurred";
+    if (error instanceof ClientResponseError) {
+      detail = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+    } else if (error instanceof Error) {
+      detail = error.message;
+    } else {
+      detail = String(error);
+    }
     return { success: false, error: detail };
   }
 }

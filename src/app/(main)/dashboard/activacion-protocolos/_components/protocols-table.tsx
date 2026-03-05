@@ -19,6 +19,7 @@ import { ProtocolDialog } from "./protocol-dialog";
 export function ProtocolsTable() {
   const user = useUser();
   const isAdmin = user?.role?.toLowerCase() === "admin";
+  const isItinerante = user?.role?.toLowerCase() === "itinerante";
 
   const [data, setData] = useState<ProtocolActivation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +30,18 @@ export function ProtocolsTable() {
     if (!user) return;
     setLoading(true);
     try {
-      const filter = !isAdmin && user.establecimiento ? `establecimiento = "${user.establecimiento}"` : "";
+      let filter = "";
+      if (isItinerante && user.establecimiento) {
+        const estArray = Array.isArray(user.establecimiento) 
+          ? user.establecimiento 
+          : [user.establecimiento];
+        
+        if (estArray.length > 0) {
+          filter = estArray.map(id => `establecimiento = "${id}"`).join(" || ");
+        }
+      } else if (!isAdmin && user.establecimiento) {
+        filter = `establecimiento = "${user.establecimiento}"`;
+      }
 
       const records = await pb.collection("activacion_protocolos").getFullList({
         sort: "-created",
@@ -44,7 +56,7 @@ export function ProtocolsTable() {
     } finally {
       setLoading(false);
     }
-  }, [user, isAdmin]);
+  }, [user, isAdmin, isItinerante]);
 
   const handleCreate = () => {
     setSelectedProtocol(null);

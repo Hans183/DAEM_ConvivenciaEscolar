@@ -46,7 +46,7 @@ const userFormSchema = z
     role: z.string({
       required_error: "Por favor seleccione un rol.",
     }),
-    establecimiento: z.string().optional(),
+    establecimiento: z.array(z.string()).optional(),
   })
   .refine(
     (data) => {
@@ -98,7 +98,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
       password: "",
       passwordConfirm: "",
       role: "User",
-      establecimiento: "",
+      establecimiento: [],
     },
   });
 
@@ -108,7 +108,11 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
         name: user.name,
         email: user.email,
         role: user.role,
-        establecimiento: user.establecimiento || "none",
+        establecimiento: Array.isArray(user.establecimiento)
+          ? user.establecimiento
+          : user.establecimiento
+            ? [user.establecimiento]
+            : [],
         password: "",
         passwordConfirm: "",
       });
@@ -119,7 +123,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
         password: "",
         passwordConfirm: "",
         role: "User",
-        establecimiento: "none",
+        establecimiento: [],
       });
     }
   }, [user, form]);
@@ -127,7 +131,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
   const onSubmit = async (data: UserFormValues) => {
     setLoading(true);
     try {
-      const establecimiento = data.establecimiento && data.establecimiento !== "none" ? data.establecimiento : null;
+      const establecimiento = Array.isArray(data.establecimiento) && data.establecimiento.length > 0 ? data.establecimiento : null;
 
       if (user) {
         const payload: UpdateUserPayload = {
@@ -167,7 +171,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
           password: "",
           passwordConfirm: "",
           role: "User",
-          establecimiento: "none",
+          establecimiento: [],
         });
       }
 
@@ -275,6 +279,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
                     <SelectContent>
                       <SelectItem value="User">Usuario</SelectItem>
                       <SelectItem value="Admin">Administrador</SelectItem>
+                      <SelectItem value="Itinerante">Itinerante</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -285,7 +290,20 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
               control={form.control}
               name="establecimiento"
               render={({ field }) => {
-                const selectedEst = establecimientos.find((e) => e.id === field.value);
+                const role = form.watch("role");
+                const isItinerante = role === "Itinerante";
+                const valueArray = Array.isArray(field.value) ? field.value : [];
+
+                let displayText = "Seleccione establecimiento(s)";
+                if (valueArray.length > 0) {
+                  if (valueArray.length === 1) {
+                    const est = establecimientos.find((e) => e.id === valueArray[0]);
+                    displayText = est ? est.nombre : "1 seleccionado";
+                  } else {
+                    displayText = `${valueArray.length} establecimientos seleccionados`;
+                  }
+                }
+
                 return (
                   <FormItem>
                     <FormLabel>Establecimiento (Opcional)</FormLabel>
@@ -297,10 +315,10 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
                             role="combobox"
                             className={cn(
                               "w-full justify-between font-normal",
-                              !selectedEst && "text-muted-foreground",
+                              valueArray.length === 0 && "text-muted-foreground",
                             )}
                           >
-                            {selectedEst ? selectedEst.nombre : "Seleccione un establecimiento"}
+                            <span className="truncate">{displayText}</span>
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </FormControl>
@@ -314,33 +332,44 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
                               <CommandItem
                                 value="none"
                                 onSelect={() => {
-                                  field.onChange("none");
+                                  field.onChange([]);
                                   setEstComboboxOpen(false);
                                 }}
                               >
                                 <Check
                                   className={cn(
                                     "mr-2 h-4 w-4",
-                                    field.value === "none" || !field.value ? "opacity-100" : "opacity-0",
+                                    valueArray.length === 0 ? "opacity-100" : "opacity-0",
                                   )}
                                 />
                                 Sin establecimiento
                               </CommandItem>
-                              {establecimientos.map((est) => (
-                                <CommandItem
-                                  key={est.id}
-                                  value={est.nombre}
-                                  onSelect={() => {
-                                    field.onChange(est.id);
-                                    setEstComboboxOpen(false);
-                                  }}
-                                >
-                                  <Check
-                                    className={cn("mr-2 h-4 w-4", field.value === est.id ? "opacity-100" : "opacity-0")}
-                                  />
-                                  {est.nombre}
-                                </CommandItem>
-                              ))}
+                              {establecimientos.map((est) => {
+                                const isSelected = valueArray.includes(est.id);
+                                return (
+                                  <CommandItem
+                                    key={est.id}
+                                    value={est.nombre}
+                                    onSelect={() => {
+                                      if (isItinerante) {
+                                        if (isSelected) {
+                                          field.onChange(valueArray.filter((v) => v !== est.id));
+                                        } else {
+                                          field.onChange([...valueArray, est.id]);
+                                        }
+                                      } else {
+                                        field.onChange([est.id]);
+                                        setEstComboboxOpen(false);
+                                      }
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn("mr-2 h-4 w-4", isSelected ? "opacity-100" : "opacity-0")}
+                                    />
+                                    {est.nombre}
+                                  </CommandItem>
+                                );
+                              })}
                             </CommandGroup>
                           </CommandList>
                         </Command>

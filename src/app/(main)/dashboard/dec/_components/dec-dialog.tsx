@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, ChevronsUpDown, X } from "lucide-react";
@@ -221,27 +221,45 @@ type Establecimiento = {
 };
 
 export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogProps) {
-  // Auth state
-  const currentUser = pb.authStore.model;
+  // Read from pb.authStore.record (same stable reference as .model, renamed in newer PB versions)
+  // We extract only primitive scalars so they can safely be used as effect dependencies.
+  const currentUser = pb.authStore.record;
   const isAdmin = currentUser?.role?.toLowerCase() === "admin";
-  const userEstablecimiento: string | null = currentUser?.establecimiento ?? null;
+  const isItinerante = currentUser?.role?.toLowerCase() === "itinerante";
+  const hasGlobalAccess = isAdmin || isItinerante;
+  // Serialize establecimiento to a stable string for dep-array comparisons
+  const establecimientoKey = JSON.stringify(currentUser?.establecimiento ?? null);
+  const userEstablecimiento: string | null = typeof currentUser?.establecimiento === "string"
+    ? currentUser.establecimiento
+    : null;
 
   const [loading, setLoading] = useState(false);
   const [establecimientos, setEstablecimientos] = useState<Establecimiento[]>([]);
-  const [estComboboxOpen, setEstComboboxOpen] = useState(false);
   const [antecedentesOpen, setAntecedentesOpen] = useState(false);
   const [conductasOpen, setConductasOpen] = useState(false);
   const [consecuentesOpen, setConsecuentesOpen] = useState(false);
 
-  // Cargar establecimientos siempre (para mostrar el nombre en modo lectura)
+  // Cargar establecimientos
   useEffect(() => {
-    if (open) {
-      pb.collection("establecimientos")
-        .getFullList({ sort: "nombre" })
-        .then((r) => setEstablecimientos(r as unknown as Establecimiento[]))
-        .catch(console.error);
-    }
-  }, [open]);
+    if (!open) return;
+    pb.collection("establecimientos")
+      .getFullList({ sort: "nombre" })
+      .then((r) => {
+        const allEstablecimientos = r as unknown as Establecimiento[];
+        // Parse the serialized key back into the value we need
+        const rawEst = JSON.parse(establecimientoKey) as string | string[] | null;
+
+        if (isAdmin) {
+          setEstablecimientos(allEstablecimientos);
+        } else if (isItinerante && rawEst) {
+          const assignedIds = Array.isArray(rawEst) ? rawEst : [rawEst];
+          setEstablecimientos(allEstablecimientos.filter((e) => assignedIds.includes(e.id)));
+        } else {
+          setEstablecimientos(allEstablecimientos);
+        }
+      })
+      .catch(console.error);
+  }, [open, isAdmin, isItinerante, establecimientoKey]);
 
   const form = useForm<DecFormValues>({
     resolver: zodResolver(decFormSchema),
@@ -280,12 +298,25 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
       nivel_dec: "",
     },
   });
+  const { reset } = form;
+
+  // Tracks the last open+recordId combination we already reset for, to prevent
+  // the effect from re-running when only a non-meaningful dependency re-evaluates.
+  const lastResetKey = useRef<string>("");
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      lastResetKey.current = "";
+      return;
+    }
+
+    // Build a stable key: open flag + record id (or "new" for create mode)
+    const resetKey = `${open ? "open" : "closed"}::${record?.id ?? "new"}`;
+    if (lastResetKey.current === resetKey) return;
+    lastResetKey.current = resetKey;
 
     if (record) {
-      form.reset({
+      reset({
         ...record,
         dia: record.dia ? new Date(record.dia).toISOString().slice(0, 16) : "",
         antecedentes: Array.isArray(record.antecedentes) ? record.antecedentes : [],
@@ -301,7 +332,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
         ea_edu_pie: record.ea_edu_pie || "",
       });
     } else {
-      form.reset({
+      reset({
         dia: new Date().toISOString().slice(0, 16),
         nombre_estudiante: "",
         edad_estudiante: 0,
@@ -332,11 +363,11 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
         otro_consecuentes: "",
         funciona_medida: false,
         propuesta_mejora: "",
-        establecimiento: isAdmin ? "" : (userEstablecimiento ?? ""),
+        establecimiento: hasGlobalAccess ? "" : (userEstablecimiento ?? ""),
         nivel_dec: "",
       });
     }
-  }, [record, form, open, isAdmin, userEstablecimiento]);
+  }, [record, open, hasGlobalAccess, userEstablecimiento, reset]);
 
   const onSubmit = async (data: DecFormValues) => {
     setLoading(true);
@@ -344,7 +375,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
       const submitData = {
         ...data,
         dia: new Date(data.dia).toISOString(),
-        establecimiento: isAdmin ? data.establecimiento || null : userEstablecimiento || null,
+        establecimiento: hasGlobalAccess ? data.establecimiento || null : userEstablecimiento || null,
       };
 
       if (record) {
@@ -422,8 +453,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                     <div className="space-y-2">
                       <h3 className="border-b pb-2 font-medium text-lg">Datos Generales</h3>
                       <div className="grid grid-cols-2 gap-4">
-                        {/* Campo Establecimiento */}
-                        {isAdmin ? (
+                        {hasGlobalAccess ? (
                           <FormField
                             control={form.control}
                             name="establecimiento"
@@ -432,52 +462,20 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                               return (
                                 <FormItem className="flex flex-col">
                                   <FormLabel>Establecimiento</FormLabel>
-                                  <Popover open={estComboboxOpen} onOpenChange={setEstComboboxOpen}>
-                                    <PopoverTrigger asChild>
-                                      <FormControl>
-                                        <Button
-                                          variant="outline"
-                                          role="combobox"
-                                          className={cn("w-full justify-between", !selected && "text-muted-foreground")}
-                                        >
-                                          {selected
-                                            ? selected.nombre.length > 40
-                                              ? `${selected.nombre.substring(0, 40)}...`
-                                              : selected.nombre
-                                            : "Seleccione un establecimiento"}
-                                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                        </Button>
-                                      </FormControl>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-[600px] p-0" align="start">
-                                      <Command>
-                                        <CommandInput placeholder="Buscar establecimiento..." />
-                                        <CommandList onWheel={(e) => e.stopPropagation()}>
-                                          <CommandEmpty>No se encontraron establecimientos.</CommandEmpty>
-                                          <CommandGroup>
-                                            {establecimientos.map((est) => (
-                                              <CommandItem
-                                                key={est.id}
-                                                value={est.nombre}
-                                                onSelect={() => {
-                                                  form.setValue("establecimiento", est.id);
-                                                  setEstComboboxOpen(false);
-                                                }}
-                                              >
-                                                <Check
-                                                  className={cn(
-                                                    "mr-2 h-4 w-4",
-                                                    est.id === field.value ? "opacity-100" : "opacity-0",
-                                                  )}
-                                                />
-                                                {est.nombre}
-                                              </CommandItem>
-                                            ))}
-                                          </CommandGroup>
-                                        </CommandList>
-                                      </Command>
-                                    </PopoverContent>
-                                  </Popover>
+                                  <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                      <SelectTrigger className={cn("w-full", !selected && "text-muted-foreground")}>
+                                        <SelectValue placeholder="Seleccione un establecimiento" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      {establecimientos.map((est) => (
+                                        <SelectItem key={est.id} value={est.id}>
+                                          {est.nombre.length > 50 ? `${est.nombre.substring(0, 50)}...` : est.nombre}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
                                   <FormMessage />
                                 </FormItem>
                               );

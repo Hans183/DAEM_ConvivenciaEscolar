@@ -8,9 +8,7 @@ import { ClientResponseError } from "pocketbase";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
-
 import { Button } from "@/components/ui/button";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import {
   Dialog,
   DialogContent,
@@ -19,9 +17,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUser } from "@/hooks/use-user";
 import { pb } from "@/lib/pocketbase";
@@ -82,15 +81,17 @@ type Establecimiento = {
 
 export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: ProtocolDialogProps) {
   // useUser() reads auth state safely client-side only (avoids hydration mismatch)
-  const currentUser = useUser();
-  const isAdmin = currentUser?.role?.toLowerCase() === "admin";
-  const userEstablecimiento: string | null = currentUser?.establecimiento ?? null;
+  const user = useUser();
+  const isAdmin = user?.role?.toLowerCase() === "admin";
+  const userEstablecimiento = user?.establecimiento as string | undefined;
+  // Itinerantes need to choose establishing since they don't have a single fixed one
+  const isItinerante = user?.role?.toLowerCase() === "itinerante";
+  const hasGlobalAccess = isAdmin || isItinerante;
 
   const [loading, setLoading] = useState(false);
   const [protocols, setProtocols] = useState<Protocol[]>([]);
   const [establecimientos, setEstablecimientos] = useState<Establecimiento[]>([]);
   const [comboboxOpen, setComboboxOpen] = useState(false);
-  const [estComboboxOpen, setEstComboboxOpen] = useState(false);
 
   // Cargar lista de protocolos
   useEffect(() => {
@@ -108,15 +109,31 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
     fetchProtocols();
   }, []);
 
-  // Cargar establecimientos siempre (para mostrar el nombre en modo lectura)
+  // Cargar establecimientos
   useEffect(() => {
     if (open) {
       pb.collection("establecimientos")
         .getFullList({ sort: "nombre" })
-        .then((r) => setEstablecimientos(r as unknown as Establecimiento[]))
+        .then((r) => {
+          const allEstablecimientos = r as unknown as Establecimiento[];
+          
+          if (isAdmin) {
+            setEstablecimientos(allEstablecimientos);
+          } else if (isItinerante && user?.establecimiento) {
+            // Assume user.establecimiento is an array of IDs for itinerante
+            const assignedIds = Array.isArray(user.establecimiento) 
+              ? user.establecimiento 
+              : [user.establecimiento];
+              
+            setEstablecimientos(allEstablecimientos.filter(e => assignedIds.includes(e.id)));
+          } else {
+            // Standard/other roles, just load all to find their single name
+            setEstablecimientos(allEstablecimientos);
+          }
+        })
         .catch(console.error);
     }
-  }, [open]);
+  }, [open, isAdmin, isItinerante, user]);
 
   // Configurar formulario
   const form = useForm<ProtocolFormValues>({
@@ -131,22 +148,25 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
 
   // Resetear formulario cuando cambia el protocolo
   useEffect(() => {
-    if (protocol) {
-      form.reset({
-        meses: protocol.meses,
-        cantidad: protocol.cantidad,
-        protocolo: protocol.protocolo,
-        establecimiento: protocol.establecimiento || "",
-      });
-    } else {
-      form.reset({
-        meses: "",
-        cantidad: 0,
-        protocolo: "",
-        establecimiento: isAdmin ? "" : (userEstablecimiento ?? ""),
-      });
+    const isCurrentlyOpen = open;
+    if (isCurrentlyOpen) {
+      if (protocol) {
+        form.reset({
+          meses: protocol.meses,
+          cantidad: protocol.cantidad,
+          protocolo: protocol.protocolo,
+          establecimiento: protocol.establecimiento || "",
+        });
+      } else {
+        form.reset({
+          meses: "",
+          cantidad: 0,
+          protocolo: "",
+          establecimiento: hasGlobalAccess ? "" : (userEstablecimiento ?? ""),
+        });
+      }
     }
-  }, [protocol, form, isAdmin, userEstablecimiento]);
+  }, [form, protocol, open, hasGlobalAccess, userEstablecimiento]);
 
   // Enviar formulario
   const onSubmit = async (data: ProtocolFormValues) => {
@@ -156,7 +176,7 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
         meses: data.meses,
         cantidad: data.cantidad,
         protocolo: data.protocolo,
-        establecimiento: isAdmin ? data.establecimiento || null : userEstablecimiento || null,
+        establecimiento: hasGlobalAccess ? data.establecimiento || null : userEstablecimiento || null,
       };
       if (protocol) {
         await pb.collection("activacion_protocolos").update(protocol.id, payload);
@@ -303,60 +323,32 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
             />
 
             {/* Campo Establecimiento */}
-            {isAdmin ? (
+            {hasGlobalAccess ? (
               <FormField
                 control={form.control}
                 name="establecimiento"
                 render={({ field }) => {
                   const selected = establecimientos.find((e) => e.id === field.value);
-                  return (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Establecimiento</FormLabel>
-                      <Popover open={estComboboxOpen} onOpenChange={setEstComboboxOpen}>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant="outline"
-                              role="combobox"
-                              className={cn("w-full justify-between", !selected && "text-muted-foreground")}
-                            >
-                              {selected ? selected.nombre : "Seleccione un establecimiento"}
-                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[550px] p-0" align="start">
-                          <Command>
-                            <CommandInput placeholder="Buscar establecimiento..." />
-                            <CommandList onWheel={(e) => e.stopPropagation()}>
-                              <CommandEmpty>No se encontraron establecimientos.</CommandEmpty>
-                              <CommandGroup>
+                        return (
+                          <FormItem className="flex flex-col">
+                            <FormLabel>Establecimiento</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger className={cn("mb-2 w-full", !selected && "text-muted-foreground")}>
+                                  <SelectValue placeholder="Seleccione un establecimiento" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
                                 {establecimientos.map((est) => (
-                                  <CommandItem
-                                    key={est.id}
-                                    value={est.nombre}
-                                    onSelect={() => {
-                                      form.setValue("establecimiento", est.id);
-                                      setEstComboboxOpen(false);
-                                    }}
-                                  >
-                                    <Check
-                                      className={cn(
-                                        "mr-2 h-4 w-4",
-                                        est.id === field.value ? "opacity-100" : "opacity-0",
-                                      )}
-                                    />
-                                    {est.nombre}
-                                  </CommandItem>
+                                  <SelectItem key={est.id} value={est.id}>
+                                    {est.nombre.length > 50 ? `${est.nombre.substring(0, 50)}...` : est.nombre}
+                                  </SelectItem>
                                 ))}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  );
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        );
                 }}
               />
             ) : (
