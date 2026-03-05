@@ -10,20 +10,17 @@ import { z } from "zod";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { pb } from "@/lib/pocketbase";
@@ -68,18 +65,6 @@ const consecuentesOptions = [
   "Otro:",
 ];
 
-// Helper for arrays: comma-separated string to array
-const commaSeparatedString = z
-  .string()
-  .optional()
-  .transform((val) => {
-    if (!val) return [];
-    return val
-      .split(",")
-      .map((v) => v.trim())
-      .filter(Boolean);
-  });
-
 const decFormSchema = z.object({
   dia: z.string().min(1, "La fecha es requerida"),
   nombre_estudiante: z.string().min(1, "Requerido"),
@@ -88,9 +73,12 @@ const decFormSchema = z.object({
   profe_jefe_estudiante: z.string().min(1, "Requerido"),
   nombre_apoderado: z.string().min(1, "Requerido"),
   fono_apoderado: z.string().min(1, "Requerido"),
-  encargado_pi: z.string().min(1, "Requerido"),
-  acompanante_interno_pi: z.string().min(1, "Requerido"),
-  acompanante_externo_pi: z.string().min(1, "Requerido"),
+  encargado_pi: z.string().optional(),
+  acompanante_interno_pi: z.string().optional(),
+  acompanante_externo_pi: z.string().optional(),
+  ea_docente: z.string().optional(),
+  ea_asistente: z.string().optional(),
+  ea_edu_pie: z.string().optional(),
   hora: z.string().min(1, "Requerido"),
   hora_otro: z.string().optional(),
   asignaturas: z.string().min(1, "Requerido"),
@@ -133,7 +121,29 @@ const decFormSchema = z.object({
   funciona_medida: z.boolean().default(false),
   propuesta_mejora: z.string().optional(),
   establecimiento: z.string().optional(),
-  nivel_dec: z.string().optional(),
+  nivel_dec: z.string().min(1, "Debe seleccionar un nivel"),
+}).superRefine((data, ctx) => {
+  if (data.nivel_dec === "Nivel 1") {
+    if (!data.ea_docente?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Requerido", path: ["ea_docente"] });
+    }
+    if (!data.ea_asistente?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Requerido", path: ["ea_asistente"] });
+    }
+    if (!data.ea_edu_pie?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Requerido", path: ["ea_edu_pie"] });
+    }
+  } else if (data.nivel_dec === "Nivel 2" || data.nivel_dec === "Nivel 3") {
+    if (!data.encargado_pi?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Requerido", path: ["encargado_pi"] });
+    }
+    if (!data.acompanante_interno_pi?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Requerido", path: ["acompanante_interno_pi"] });
+    }
+    if (data.nivel_dec === "Nivel 3" && !data.acompanante_externo_pi?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Requerido", path: ["acompanante_externo_pi"] });
+    }
+  }
 });
 
 type DecFormValues = z.infer<typeof decFormSchema>;
@@ -173,7 +183,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
     }
   }, [open]);
 
-  const form = useForm<any>({
+  const form = useForm<DecFormValues>({
     resolver: zodResolver(decFormSchema),
     defaultValues: {
       dia: new Date().toISOString().slice(0, 16),
@@ -186,6 +196,9 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
       encargado_pi: "",
       acompanante_interno_pi: "",
       acompanante_externo_pi: "",
+      ea_docente: "",
+      ea_asistente: "",
+      ea_edu_pie: "",
       hora: "",
       hora_otro: "",
       asignaturas: "",
@@ -209,6 +222,8 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
   });
 
   useEffect(() => {
+    if (!open) return;
+
     if (record) {
       form.reset({
         ...record,
@@ -218,6 +233,12 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
         consecuentes: Array.isArray(record.consecuentes) ? record.consecuentes : [],
         establecimiento: record.establecimiento || "",
         nivel_dec: record.nivel_dec || "",
+        encargado_pi: record.encargado_pi || "",
+        acompanante_interno_pi: record.acompanante_interno_pi || "",
+        acompanante_externo_pi: record.acompanante_externo_pi || "",
+        ea_docente: record.ea_docente || "",
+        ea_asistente: record.ea_asistente || "",
+        ea_edu_pie: record.ea_edu_pie || "",
       });
     } else {
       form.reset({
@@ -231,6 +252,9 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
         encargado_pi: "",
         acompanante_interno_pi: "",
         acompanante_externo_pi: "",
+        ea_docente: "",
+        ea_asistente: "",
+        ea_edu_pie: "",
         hora: "",
         hora_otro: "",
         asignaturas: "",
@@ -273,13 +297,14 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
 
       onSuccess();
       onOpenChange(false);
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as { message?: string; response?: { data?: unknown } };
       console.error("Full error object:", error);
       console.error("Response data:", error.response?.data);
 
       let errorMessage = error.message || "Por favor verifica los datos ingresados.";
       if (error.response?.data) {
-        errorMessage = "Error PB: " + JSON.stringify(error.response.data);
+        errorMessage = `Error PB: ${JSON.stringify(error.response.data)}`;
       }
 
       toast.error(record ? "Error al actualizar registro" : "Error al crear registro", {
@@ -310,9 +335,9 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] h-[90vh] flex flex-col p-0">
-        <DialogHeader className="px-6 py-6 border-b">
-          <div className="flex justify-between items-center">
+      <DialogContent className="flex h-[90vh] flex-col p-0 sm:max-w-[700px]">
+        <DialogHeader className="border-b px-6 py-6">
+          <div className="flex items-center justify-between">
             <div>
               <DialogTitle>{record ? "Editar DEC" : "Nuevo DEC"}</DialogTitle>
               <DialogDescription>
@@ -321,21 +346,21 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                   : "Crea un nuevo Documento de Entrevista y Compromiso."}
               </DialogDescription>
             </div>
-            <div className="text-sm font-medium text-muted-foreground bg-muted px-3 py-1 rounded-full">
+            <div className="rounded-full bg-muted px-3 py-1 font-medium text-muted-foreground text-sm">
               Paso {step} de {totalSteps}
             </div>
           </div>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full overflow-hidden">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex h-full flex-col overflow-hidden">
             <div className="flex-1 overflow-y-auto px-6">
               <div className="space-y-6">
                 {/* PASO 1: Datos Generales y Personal */}
                 {step === 1 && (
-                  <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                  <div className="fade-in slide-in-from-right-4 animate-in space-y-6 duration-300">
                     <div className="space-y-2">
-                      <h3 className="text-lg font-medium border-b pb-2">Datos Generales</h3>
+                      <h3 className="border-b pb-2 font-medium text-lg">Datos Generales</h3>
                       <div className="grid grid-cols-2 gap-4">
                         {/* Campo Establecimiento */}
                         {isAdmin ? (
@@ -396,8 +421,8 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                           />
                         ) : (
                           <div className="space-y-1">
-                            <p className="text-sm font-medium">Establecimiento</p>
-                            <p className="flex h-9 w-full items-center rounded-md border border-input bg-muted px-3 py-1 text-sm text-muted-foreground">
+                            <p className="font-medium text-sm">Establecimiento</p>
+                            <p className="flex h-9 w-full items-center rounded-md border border-input bg-muted px-3 py-1 text-muted-foreground text-sm">
                               {establecimientos.find((e) => e.id === userEstablecimiento)?.nombre ??
                                 "Sin establecimiento asignado"}
                             </p>
@@ -508,7 +533,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                     </div>
 
                     <div className="space-y-2">
-                      <h3 className="text-lg font-medium border-b pb-2">Nivel DEC</h3>
+                      <h3 className="border-b pb-2 font-medium text-lg">Nivel DEC</h3>
                       <FormField
                         control={form.control}
                         name="nivel_dec"
@@ -540,59 +565,119 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <h3 className="text-lg font-medium border-b pb-2">Personal a Cargo</h3>
+                    <div className="space-y-4">
+                      <h3 className="border-b pb-2 font-medium text-lg">Personal a Cargo</h3>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="encargado_pi"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Encargado</FormLabel>
-                              <FormControl>
-                                <Input {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="acompanante_interno_pi"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Acompañante Interno</FormLabel>
-                              <FormControl>
-                                <Input {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="acompanante_externo_pi"
-                          render={({ field }) => (
-                            <FormItem className="col-span-2">
-                              <FormLabel>Acompañante Externo</FormLabel>
-                              <FormControl>
-                                <Input {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
+                      {!form.watch("nivel_dec") && (
+                        <div className="rounded-md bg-muted p-4 text-center text-sm text-muted-foreground">
+                          Seleccione el <strong>Nivel DEC</strong> para visualizar los campos de personal a cargo correspondientes.
+                        </div>
+                      )}
+
+                      {form.watch("nivel_dec") === "Nivel 1" && (
+                        <div className="space-y-4 rounded-md border p-4">
+                          <h4 className="font-semibold text-sm">Equipo de Aula</h4>
+                          <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                              control={form.control}
+                              name="ea_docente"
+                              render={({ field }) => (
+                                <FormItem className="col-span-2">
+                                  <FormLabel>Docente</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="ea_asistente"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Asistente</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="ea_edu_pie"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Ed. Diferencial P.I.E.</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {(form.watch("nivel_dec") === "Nivel 2" || form.watch("nivel_dec") === "Nivel 3") && (
+                        <div className="space-y-4 rounded-md border p-4">
+                          <h4 className="font-semibold text-sm">Equipo Multidisciplinario</h4>
+                          <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                              control={form.control}
+                              name="encargado_pi"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Encargado(a)</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="acompanante_interno_pi"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Acompañante Interno</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            {form.watch("nivel_dec") === "Nivel 3" && (
+                              <FormField
+                                control={form.control}
+                                name="acompanante_externo_pi"
+                                render={({ field }) => (
+                                  <FormItem className="col-span-2">
+                                    <FormLabel>Acompañante Externo</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
 
                 {/* PASO 2: Estudiante, Apoderado y Antecedentes */}
                 {step === 2 && (
-                  <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                  <div className="fade-in slide-in-from-right-4 animate-in space-y-6 duration-300">
                     <div className="space-y-2">
-                      <h3 className="text-lg font-medium border-b pb-2">Estudiante y Apoderado</h3>
+                      <h3 className="border-b pb-2 font-medium text-lg">Antecedentes del Estudiante</h3>
                       <div className="grid grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
@@ -630,9 +715,29 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Curso</FormLabel>
-                              <FormControl>
-                                <Input {...field} />
-                              </FormControl>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Seleccione un curso" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="Pre-Kinder">Pre-Kinder</SelectItem>
+                                  <SelectItem value="Kinder">Kinder</SelectItem>
+                                  <SelectItem value="1° Básico">1° Básico</SelectItem>
+                                  <SelectItem value="2° Básico">2° Básico</SelectItem>
+                                  <SelectItem value="3° Básico">3° Básico</SelectItem>
+                                  <SelectItem value="4° Básico">4° Básico</SelectItem>
+                                  <SelectItem value="5° Básico">5° Básico</SelectItem>
+                                  <SelectItem value="6° Básico">6° Básico</SelectItem>
+                                  <SelectItem value="7° Básico">7° Básico</SelectItem>
+                                  <SelectItem value="8° Básico">8° Básico</SelectItem>
+                                  <SelectItem value="I Medio">I Medio</SelectItem>
+                                  <SelectItem value="II Medio">II Medio</SelectItem>
+                                  <SelectItem value="III Medio">III Medio</SelectItem>
+                                  <SelectItem value="IV Medio">IV Medio</SelectItem>
+                                </SelectContent>
+                              </Select>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -679,9 +784,9 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                       </div>
                     </div>
 
-                    <div className="space-y-2 animate-in fade-in slide-in-from-right-4 duration-300">
+                    <div className="fade-in slide-in-from-right-4 animate-in space-y-2 duration-300">
                       <div className="space-y-2">
-                        <h3 className="text-lg font-medium border-b pb-2">Gatillante de la DEC</h3>
+                        <h3 className="border-b pb-2 font-medium text-lg">Gatillante de la DEC</h3>
                         <div className="grid grid-cols-1 gap-4">
                           <FormField
                             control={form.control}
@@ -699,7 +804,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                                           variant="outline"
                                           role="combobox"
                                           className={cn(
-                                            "w-full min-h-10 h-auto justify-start flex-wrap gap-1 py-2",
+                                            "h-auto min-h-10 w-full flex-wrap justify-start gap-1 py-2",
                                             selected.length === 0 && "text-muted-foreground",
                                           )}
                                         >
@@ -716,7 +821,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                                                   field.onChange(selected.filter((v) => v !== item));
                                                 }}
                                               >
-                                                {item.length > 30 ? item.slice(0, 30) + "…" : item}
+                                                {item.length > 30 ? `${item.slice(0, 30)}…` : item}
                                                 <X className="ml-1 h-3 w-3 cursor-pointer" />
                                               </Badge>
                                             ))
@@ -775,34 +880,6 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                               )}
                             />
                           )}
-                          <div className="grid grid-cols-2 gap-4 border-t pt-4">
-                            <FormField
-                              control={form.control}
-                              name="ConflictoConEstudiante_antecedentes"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Detalles Estudiante(s) (Si aplica)</FormLabel>
-                                  <FormControl>
-                                    <Input {...field} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={form.control}
-                              name="ConflictoConProfesor_antecedentes"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Detalles Profesor (Si aplica)</FormLabel>
-                                  <FormControl>
-                                    <Input {...field} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
                         </div>
                       </div>
                     </div>
@@ -811,9 +888,9 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
 
                 {/* PASO 3: Conductas */}
                 {step === 3 && (
-                  <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                  <div className="fade-in slide-in-from-right-4 animate-in space-y-6 duration-300">
                     <div className="space-y-4">
-                      <h3 className="text-lg font-medium border-b pb-2">Conductas</h3>
+                      <h3 className="border-b pb-2 font-medium text-lg">Conductas</h3>
                       <div className="grid grid-cols-1 gap-4">
                         <FormField
                           control={form.control}
@@ -831,7 +908,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                                         variant="outline"
                                         role="combobox"
                                         className={cn(
-                                          "w-full min-h-10 h-auto justify-start flex-wrap gap-1 py-2",
+                                          "h-auto min-h-10 w-full flex-wrap justify-start gap-1 py-2",
                                           selected.length === 0 && "text-muted-foreground",
                                         )}
                                       >
@@ -848,7 +925,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                                                 field.onChange(selected.filter((v) => v !== item));
                                               }}
                                             >
-                                              {item.length > 30 ? item.slice(0, 30) + "…" : item}
+                                              {item.length > 30 ? `${item.slice(0, 30)}…` : item}
                                               <X className="ml-1 h-3 w-3 cursor-pointer" />
                                             </Badge>
                                           ))
@@ -966,9 +1043,9 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
 
                 {/* PASO 4: Consecuentes */}
                 {step === 4 && (
-                  <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                  <div className="fade-in slide-in-from-right-4 animate-in space-y-6 duration-300">
                     <div className="space-y-4">
-                      <h3 className="text-lg font-medium border-b pb-2">Consecuencias y Medidas</h3>
+                      <h3 className="border-b pb-2 font-medium text-lg">Consecuencias y Medidas</h3>
                       <div className="grid grid-cols-1 gap-4">
                         <FormField
                           control={form.control}
@@ -986,7 +1063,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                                         variant="outline"
                                         role="combobox"
                                         className={cn(
-                                          "w-full min-h-10 h-auto justify-start flex-wrap gap-1 py-2",
+                                          "h-auto min-h-10 w-full flex-wrap justify-start gap-1 py-2",
                                           selected.length === 0 && "text-muted-foreground",
                                         )}
                                       >
@@ -1003,7 +1080,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                                                 field.onChange(selected.filter((v) => v !== item));
                                               }}
                                             >
-                                              {item.length > 30 ? item.slice(0, 30) + "…" : item}
+                                              {item.length > 30 ? `${item.slice(0, 30)}…` : item}
                                               <X className="ml-1 h-3 w-3 cursor-pointer" />
                                             </Badge>
                                           ))
@@ -1067,13 +1144,13 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                           name="funciona_medida"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-base font-semibold">¿Funciona la Medida tomada?</FormLabel>
+                              <FormLabel className="font-semibold text-base">¿Funciona la Medida tomada?</FormLabel>
                               <div className="flex gap-3 pt-1">
                                 <button
                                   type="button"
                                   onClick={() => field.onChange(true)}
                                   className={cn(
-                                    "flex-1 py-3 rounded-lg border-2 font-semibold text-sm transition-all duration-200",
+                                    "flex-1 rounded-lg border-2 py-3 font-semibold text-sm transition-all duration-200",
                                     field.value === true
                                       ? "border-green-500 bg-green-500 text-white shadow-md"
                                       : "border-border bg-background text-muted-foreground hover:border-green-400 hover:text-green-600",
@@ -1085,7 +1162,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                                   type="button"
                                   onClick={() => field.onChange(false)}
                                   className={cn(
-                                    "flex-1 py-3 rounded-lg border-2 font-semibold text-sm transition-all duration-200",
+                                    "flex-1 rounded-lg border-2 py-3 font-semibold text-sm transition-all duration-200",
                                     field.value === false
                                       ? "border-red-500 bg-red-500 text-white shadow-md"
                                       : "border-border bg-background text-muted-foreground hover:border-red-400 hover:text-red-600",
@@ -1118,8 +1195,8 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
               </div>
             </div>
 
-            <div className="p-6 border-t bg-muted/20 mt-auto">
-              <div className="flex justify-between w-full items-center">
+            <div className="mt-auto border-t bg-muted/20 p-6">
+              <div className="flex w-full items-center justify-between">
                 {/* Zona Botón Cancelar/Anterior */}
                 <div>
                   {step > 1 ? (
@@ -1134,14 +1211,14 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                 </div>
 
                 {/* Puntos indicadores opcionales de progreso */}
-                <div className="flex gap-1.5 px-4 hidden sm:flex">
-                  {Array.from({ length: totalSteps }).map((_, i) => (
+                <div className="flex hidden gap-1.5 px-4 sm:flex">
+                  {Array.from({ length: totalSteps }, (_, i) => i + 1).map((stepIndex) => (
                     <div
-                      key={i}
+                      key={`step-indicator-${stepIndex}`}
                       className={`h-2 rounded-full transition-all ${
-                        step === i + 1
+                        step === stepIndex
                           ? "w-6 bg-primary"
-                          : step > i + 1
+                          : step > stepIndex
                             ? "w-2 bg-primary/60"
                             : "w-2 bg-muted-foreground/20"
                       }`}

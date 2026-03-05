@@ -23,6 +23,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useUser } from "@/hooks/use-user";
 import { pb } from "@/lib/pocketbase";
 import { cn } from "@/lib/utils";
 
@@ -80,8 +81,8 @@ type Establecimiento = {
 };
 
 export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: ProtocolDialogProps) {
-  // Read auth state directly from pb — synchronous, no timing issues
-  const currentUser = pb.authStore.model;
+  // useUser() reads auth state safely client-side only (avoids hydration mismatch)
+  const currentUser = useUser();
   const isAdmin = currentUser?.role?.toLowerCase() === "admin";
   const userEstablecimiento: string | null = currentUser?.establecimiento ?? null;
 
@@ -230,7 +231,7 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
                       type="number"
                       placeholder="0"
                       {...field}
-                      onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                      onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 0)}
                     />
                   </FormControl>
                   <FormMessage />
@@ -260,7 +261,7 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
                                 const name = selected
                                   ? selected.item || selected.nombre || selected.name || selected.id
                                   : "Protocolo no encontrado";
-                                return name.length > 50 ? name.slice(0, 50) + "…" : name;
+                                return name.length > 50 ? `${name.slice(0, 50)}…` : name;
                               })()
                             : "Seleccione un protocolo"}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -360,8 +361,8 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
               />
             ) : (
               <div className="space-y-1">
-                <p className="text-sm font-medium">Establecimiento</p>
-                <p className="flex h-9 w-full items-center rounded-md border border-input bg-muted px-3 py-1 text-sm text-muted-foreground">
+                <p className="font-medium text-sm">Establecimiento</p>
+                <p className="flex h-9 w-full items-center rounded-md border border-input bg-muted px-3 py-1 text-muted-foreground text-sm">
                   {establecimientos.find((e) => e.id === userEstablecimiento)?.nombre ?? "Sin establecimiento asignado"}
                 </p>
               </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -18,6 +19,8 @@ import { DecDialog } from "./dec-dialog";
 export function DecTable() {
   const user = useUser();
   const isAdmin = user?.role?.toLowerCase() === "admin";
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [data, setData] = useState<DecRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -73,6 +76,24 @@ export function DecTable() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  useEffect(() => {
+    if (data.length > 0) {
+      const decId = searchParams.get("decId");
+      if (decId) {
+        const record = data.find((r) => r.id === decId);
+        if (record) {
+          handleEdit(record);
+          const params = new URLSearchParams(searchParams.toString());
+          params.delete("decId");
+          const queryStr = params.toString();
+          const newUrl = queryStr ? `?${queryStr}` : window.location.pathname;
+          router.replace(newUrl, { scroll: false });
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, searchParams]);
 
   const columns = useMemo(
     () => getColumns({ onEdit: handleEdit, onDelete: handleDelete, isAdmin }),

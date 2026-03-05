@@ -98,8 +98,8 @@ export function LayoutControls() {
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button size="icon">
+      <PopoverTrigger asChild suppressHydrationWarning>
+        <Button size="icon" suppressHydrationWarning>
           <Settings />
         </Button>
       </PopoverTrigger>

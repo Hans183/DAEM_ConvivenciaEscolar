@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { DecTable } from "./_components/dec-table";
 
 export const metadata = {
@@ -15,7 +17,9 @@ export default function DecPage() {
         </div>
       </div>
       <div className="flex-1">
-        <DecTable />
+        <Suspense fallback={<div className="p-8 text-center text-muted-foreground">Cargando la tabla...</div>}>
+          <DecTable />
+        </Suspense>
       </div>
     </div>
   );

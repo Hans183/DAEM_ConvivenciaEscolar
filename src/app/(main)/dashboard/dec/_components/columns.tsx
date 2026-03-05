@@ -10,7 +10,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -32,6 +31,9 @@ export type DecRecord = {
   encargado_pi: string;
   acompanante_interno_pi: string;
   acompanante_externo_pi: string;
+  ea_docente?: string;
+  ea_asistente?: string;
+  ea_edu_pie?: string;
   hora: string;
   hora_otro?: string;
   asignaturas: string;
@@ -147,7 +149,7 @@ export const getColumns = ({ onEdit, onDelete, isAdmin }: ColumnsProps): ColumnD
             ? "bg-yellow-100 text-yellow-800 border-yellow-300"
             : "bg-red-100 text-red-800 border-red-300";
       return (
-        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${color}`}>
+        <span className={`inline-flex items-center rounded-full border px-2 py-0.5 font-medium text-xs ${color}`}>
           {nivel}
         </span>
       );
@@ -177,6 +179,7 @@ export const getColumns = ({ onEdit, onDelete, isAdmin }: ColumnsProps): ColumnD
               Descargar PDF
             </DropdownMenuItem>
             {isAdmin && (
+              // biome-ignore lint/complexity/noUselessFragments: <falso positivo, necesito que solo los admins puedan borrar>
               <>
                 <DropdownMenuItem onClick={() => onDelete(item)} className="text-red-600 focus:text-red-600">
                   <Trash className="mr-2 h-4 w-4" />

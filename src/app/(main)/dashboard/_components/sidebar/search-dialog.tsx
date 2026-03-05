@@ -1,7 +1,8 @@
 "use client";
 import * as React from "react";
+import { useRouter } from "next/navigation";
 
-import { ChartBar, Forklift, Gauge, GraduationCap, LayoutDashboard, Search, ShoppingBag } from "lucide-react";
+import { FileText, Loader2, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,23 +12,20 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-  CommandSeparator,
 } from "@/components/ui/command";
-
-const searchItems = [
-  { group: "Dashboards", icon: LayoutDashboard, label: "Default" },
-  { group: "Dashboards", icon: Gauge, label: "Analytics", disabled: true },
-  { group: "Dashboards", icon: ShoppingBag, label: "E-Commerce", disabled: true },
-  { group: "Dashboards", icon: GraduationCap, label: "Academy", disabled: true },
-  { group: "Dashboards", icon: Forklift, label: "Logistics", disabled: true },
-  { group: "Authentication", label: "Login v1" },
-  { group: "Authentication", label: "Login v2" },
-  { group: "Authentication", label: "Register v1" },
-  { group: "Authentication", label: "Register v2" },
-];
+import { useUser } from "@/hooks/use-user";
+import { pb } from "@/lib/pocketbase";
 
 export function SearchDialog() {
   const [open, setOpen] = React.useState(false);
+  const [query, setQuery] = React.useState("");
+  const [results, setResults] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  
+  const router = useRouter();
+  const user = useUser();
+  const isAdmin = user?.role?.toLowerCase() === "admin";
+
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "j" && (e.metaKey || e.ctrlKey)) {
@@ -39,6 +37,47 @@ export function SearchDialog() {
     return () => document.removeEventListener("keydown", down);
   }, []);
 
+  React.useEffect(() => {
+    if (!open) {
+      setQuery("");
+      setResults([]);
+      return;
+    }
+
+    if (query.trim().length < 2) {
+      setResults([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const estFilter = !isAdmin && user?.establecimiento ? `establecimiento = "${user.establecimiento}"` : "";
+        const searchFilter = `(nombre_estudiante ~ "${query}" || nombre_apoderado ~ "${query}")`;
+        const filter = estFilter ? `(${estFilter}) && ${searchFilter}` : searchFilter;
+
+        const records = await pb.collection("DEC").getList(1, 5, {
+          filter,
+          sort: "-created",
+        });
+        setResults(records.items);
+      } catch (error: any) {
+        if (!error.isAbort) {
+          console.error("Search error:", error);
+        }
+      } finally {
+        setLoading(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [query, open, isAdmin, user]);
+
+  const handleSelect = (id: string) => {
+    setOpen(false);
+    router.push(`/dashboard/dec?decId=${id}`);
+  };
+
   return (
     <>
       <Button
@@ -47,30 +86,44 @@ export function SearchDialog() {
         onClick={() => setOpen(true)}
       >
         <Search className="size-4" />
-        Search
+        Buscar
         <kbd className="inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-medium text-[10px]">
           <span className="text-xs">⌘</span>J
         </kbd>
       </Button>
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Search dashboards, users, and more…" />
+        <CommandInput 
+          placeholder="Buscar estudiante o apoderado en DEC..." 
+          value={query}
+          onValueChange={setQuery}
+        />
         <CommandList>
-          <CommandEmpty>No results found.</CommandEmpty>
-          {[...new Set(searchItems.map((item) => item.group))].map((group, i) => (
-            <React.Fragment key={group}>
-              {i !== 0 && <CommandSeparator />}
-              <CommandGroup heading={group} key={group}>
-                {searchItems
-                  .filter((item) => item.group === group)
-                  .map((item) => (
-                    <CommandItem className="!py-1.5" key={item.label} onSelect={() => setOpen(false)}>
-                      {item.icon && <item.icon />}
-                      <span>{item.label}</span>
-                    </CommandItem>
-                  ))}
-              </CommandGroup>
-            </React.Fragment>
-          ))}
+          {loading && (
+            <div className="flex items-center justify-center p-6 text-sm text-muted-foreground">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Buscando...
+            </div>
+          )}
+          {!loading && query.trim().length >= 2 && results.length === 0 && (
+            <CommandEmpty>No se encontraron resultados.</CommandEmpty>
+          )}
+          {!loading && results.length > 0 && (
+            <CommandGroup heading="Documentos DEC">
+              {results.map((item) => (
+                <CommandItem 
+                  key={item.id} 
+                  value={`${item.id} ${item.nombre_estudiante} ${item.nombre_apoderado}`}
+                  onSelect={() => handleSelect(item.id)}
+                >
+                  <FileText className="mr-2 h-4 w-4 text-muted-foreground" />
+                  <span>{item.nombre_estudiante}</span>
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    Apoderado: {item.nombre_apoderado}
+                  </span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
         </CommandList>
       </CommandDialog>
     </>

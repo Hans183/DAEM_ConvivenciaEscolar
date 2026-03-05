@@ -163,14 +163,32 @@ export const generateDecPDF = (record: DecRecord) => {
   addTwoFields("Apoderado", record.nombre_apoderado, "Teléfono", record.fono_apoderado);
 
   addSectionTitle("III. PERSONAL INTERVINIENTE");
-  addField("Encargado(a) del Procedimiento", record.encargado_pi);
-  if (record.acompanante_interno_pi || record.acompanante_externo_pi) {
-    addTwoFields(
-      "Acompañante Interno",
-      record.acompanante_interno_pi,
-      "Acompañante Externo",
-      record.acompanante_externo_pi,
-    );
+  if (record.nivel_dec === "Nivel 1") {
+    addField("Equipo de Aula", "");
+    addField("Docente", record.ea_docente);
+    addTwoFields("Asistente", record.ea_asistente, "Ed. Diferencial P.I.E.", record.ea_edu_pie);
+  } else if (record.nivel_dec === "Nivel 2" || record.nivel_dec === "Nivel 3") {
+    addField("Equipo Multidisciplinario", "");
+    addField("Encargado(a) del Procedimiento", record.encargado_pi);
+    if (record.acompanante_interno_pi || record.acompanante_externo_pi) {
+      addTwoFields(
+        "Acompañante Interno",
+        record.acompanante_interno_pi,
+        "Acompañante Externo",
+        record.acompanante_externo_pi,
+      );
+    }
+  } else {
+    // Fallback if no level is specified or old records
+    addField("Encargado(a) del Procedimiento", record.encargado_pi);
+    if (record.acompanante_interno_pi || record.acompanante_externo_pi) {
+      addTwoFields(
+        "Acompañante Interno",
+        record.acompanante_interno_pi,
+        "Acompañante Externo",
+        record.acompanante_externo_pi,
+      );
+    }
   }
 
   addSectionTitle("IV. ANÁLISIS DEL EVENTO (GATILLANTE)");
@@ -199,16 +217,12 @@ export const generateDecPDF = (record: DecRecord) => {
   doc.setDrawColor(0);
   const sigWidth = 60;
 
-  // Signature Line 1
-  doc.line(margin + 10, y, margin + 10 + sigWidth, y);
+  // Signature Line
+  const centerX = pageWidth / 2;
+  doc.line(centerX - sigWidth / 2, y, centerX + sigWidth / 2, y);
   doc.setFontSize(9);
-  doc.text("Firma Profesional", margin + 10 + sigWidth / 2, y + 5, { align: "center" });
-  doc.text("Responsable", margin + 10 + sigWidth / 2, y + 9, { align: "center" });
-
-  // Signature Line 2
-  doc.line(pageWidth - margin - 10 - sigWidth, y, pageWidth - margin - 10, y);
-  doc.text("Firma Apoderado", pageWidth - margin - 10 - sigWidth / 2, y + 5, { align: "center" });
-  doc.text("o Adulto Responsable", pageWidth - margin - 10 - sigWidth / 2, y + 9, { align: "center" });
+  doc.text("Firma Profesional", centerX, y + 5, { align: "center" });
+  doc.text("Responsable", centerX, y + 9, { align: "center" });
 
   // Footer Info
   doc.setFontSize(8);
