@@ -83,6 +83,7 @@ export function NavUser({
                 pb.authStore.clear();
                 // Borra explícitamente la cookie para que el middleware
                 // no redirija de vuelta al dashboard
+                // biome-ignore lint/suspicious/noDocumentCookie: Se requiere limpiar la cookie de middleware explícitamente
                 document.cookie = "pb_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
                 window.location.href = "/auth/login";
               }}

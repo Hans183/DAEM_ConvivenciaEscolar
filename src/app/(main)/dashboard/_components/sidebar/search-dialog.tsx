@@ -16,10 +16,16 @@ import {
 import { useUser } from "@/hooks/use-user";
 import { pb } from "@/lib/pocketbase";
 
+interface SearchResult {
+  id: string;
+  nombre_estudiante: string;
+  nombre_apoderado: string;
+}
+
 export function SearchDialog() {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
-  const [results, setResults] = React.useState<any[]>([]);
+  const [results, setResults] = React.useState<SearchResult[]>([]);
   const [loading, setLoading] = React.useState(false);
   
   const router = useRouter();
@@ -60,8 +66,9 @@ export function SearchDialog() {
           filter,
           sort: "-created",
         });
-        setResults(records.items);
-      } catch (error: any) {
+        setResults(records.items as unknown as SearchResult[]);
+      } catch (err: unknown) {
+        const error = err as { isAbort?: boolean };
         if (!error.isAbort) {
           console.error("Search error:", error);
         }
@@ -99,7 +106,7 @@ export function SearchDialog() {
         />
         <CommandList>
           {loading && (
-            <div className="flex items-center justify-center p-6 text-sm text-muted-foreground">
+            <div className="flex items-center justify-center p-6 text-muted-foreground text-sm">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Buscando...
             </div>
@@ -117,7 +124,7 @@ export function SearchDialog() {
                 >
                   <FileText className="mr-2 h-4 w-4 text-muted-foreground" />
                   <span>{item.nombre_estudiante}</span>
-                  <span className="ml-2 text-xs text-muted-foreground">
+                  <span className="ml-2 text-muted-foreground text-xs">
                     Apoderado: {item.nombre_apoderado}
                   </span>
                 </CommandItem>

@@ -569,7 +569,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                       <h3 className="border-b pb-2 font-medium text-lg">Personal a Cargo</h3>
 
                       {!form.watch("nivel_dec") && (
-                        <div className="rounded-md bg-muted p-4 text-center text-sm text-muted-foreground">
+                        <div className="rounded-md bg-muted p-4 text-center text-muted-foreground text-sm">
                           Seleccione el <strong>Nivel DEC</strong> para visualizar los campos de personal a cargo correspondientes.
                         </div>
                       )}

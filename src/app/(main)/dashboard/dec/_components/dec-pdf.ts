@@ -44,7 +44,7 @@ export const generateDecPDF = (record: DecRecord) => {
     doc.setTextColor(0, 0, 0);
   };
 
-  const addField = (label: string, value: any, indent = 0) => {
+  const addField = (label: string, value: unknown, indent = 0) => {
     // Return false if value is empty/null/false
     if (value === undefined || value === null || value === "" || (Array.isArray(value) && value.length === 0)) {
       return false;
@@ -80,7 +80,7 @@ export const generateDecPDF = (record: DecRecord) => {
   };
 
   // Helper for 2 column layout for short fields
-  const addTwoFields = (label1: string, val1: any, label2: string, val2: any) => {
+  const addTwoFields = (label1: string, val1: unknown, label2: string, val2: unknown) => {
     if (!val1 && !val2) return;
 
     const colWidth = (pageWidth - margin * 2) / 2;

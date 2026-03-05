@@ -43,7 +43,8 @@ export function DecTable() {
       await pb.collection("DEC").delete(record.id);
       toast.success("Registro eliminado correctamente");
       fetchData();
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as { isAbort?: boolean };
       console.error("Failed to delete DEC record:", error);
       toast.error("Error al eliminar el registro");
     }
@@ -61,7 +62,8 @@ export function DecTable() {
         ...(filter ? { filter } : {}),
       });
       setData(records as unknown as DecRecord[]);
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as { isAbort?: boolean };
       if (error.isAbort) return;
       console.error("Failed to fetch DEC records:", error);
       toast.error("Error al cargar registros DEC");
@@ -70,13 +72,14 @@ export function DecTable() {
     }
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Intentional bypass
   useEffect(() => {
     if (user !== null) {
       fetchData();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Handle specific search params sync
   useEffect(() => {
     if (data.length > 0) {
       const decId = searchParams.get("decId");
@@ -92,12 +95,11 @@ export function DecTable() {
         }
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, searchParams]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Internal handlers are stable
   const columns = useMemo(
     () => getColumns({ onEdit: handleEdit, onDelete: handleDelete, isAdmin }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [isAdmin],
   );
 

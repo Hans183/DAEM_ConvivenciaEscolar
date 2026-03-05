@@ -12,7 +12,7 @@ export default function DecPage() {
     <div className="flex h-full flex-col space-y-6">
       <div className="flex items-center justify-between space-y-2">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Registro DEC</h2>
+          <h2 className="font-bold text-2xl tracking-tight">Registro DEC</h2>
           <p className="text-muted-foreground">Documento de Entrevista y Compromiso</p>
         </div>
       </div>
