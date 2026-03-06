@@ -11,7 +11,14 @@ import { z } from "zod";
 
 import { createUserAction, updateUserAction, type UpdateUserPayload } from "@/app/actions/users";
 import { Button } from "@/components/ui/button";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import {
   Dialog,
   DialogContent,
@@ -20,7 +27,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -236,7 +250,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
                     <FormLabel>Contraseña</FormLabel>
                     <FormControl>
                       <Input
-                        type={field.value && field.value.length > 0 ? "text" : "password"}
+                        type="password"
                         placeholder={user ? "********" : "Requerido"}
                         {...field}
                       />
@@ -253,7 +267,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
                     <FormLabel>Confirmar Contraseña</FormLabel>
                     <FormControl>
                       <Input
-                        type={field.value && field.value.length > 0 ? "text" : "password"}
+                        type="password"
                         placeholder={user ? "********" : "Requerido"}
                         {...field}
                       />
