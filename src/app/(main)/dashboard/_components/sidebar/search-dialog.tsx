@@ -29,7 +29,7 @@ export function SearchDialog() {
   const [query, setQuery] = React.useState("");
   const [results, setResults] = React.useState<SearchResult[]>([]);
   const [loading, setLoading] = React.useState(false);
-  
+
   const router = useRouter();
   const user = useUser();
   const isAdmin = user?.role?.toLowerCase() === "admin";
@@ -101,11 +101,7 @@ export function SearchDialog() {
         </kbd>
       </Button>
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput 
-          placeholder="Buscar estudiante o apoderado en DEC..." 
-          value={query}
-          onValueChange={setQuery}
-        />
+        <CommandInput placeholder="Buscar estudiante o apoderado en DEC..." value={query} onValueChange={setQuery} />
         <CommandList>
           {loading && (
             <div className="flex items-center justify-center p-6 text-muted-foreground text-sm">
@@ -119,16 +115,14 @@ export function SearchDialog() {
           {!loading && results.length > 0 && (
             <CommandGroup heading="Documentos DEC">
               {results.map((item) => (
-                <CommandItem 
-                  key={item.id} 
+                <CommandItem
+                  key={item.id}
                   value={`${item.id} ${item.nombre_estudiante} ${item.nombre_apoderado}`}
                   onSelect={() => handleSelect(item.id)}
                 >
                   <FileText className="mr-2 h-4 w-4 text-muted-foreground" />
                   <span>{item.nombre_estudiante}</span>
-                  <span className="ml-2 text-muted-foreground text-xs">
-                    Apoderado: {item.nombre_apoderado}
-                  </span>
+                  <span className="ml-2 text-muted-foreground text-xs">Apoderado: {item.nombre_apoderado}</span>
                 </CommandItem>
               ))}
             </CommandGroup>

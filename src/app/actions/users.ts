@@ -33,13 +33,72 @@ export interface ActionResult {
   error?: string;
 }
 
+export interface UserRecord {
+  id: string;
+  collectionId: string;
+  collectionName: string;
+  name: string;
+  email: string;
+  username: string;
+  avatar: string;
+  role: string;
+  verified: boolean;
+  created: string;
+  establecimiento: string[];
+  expand?: {
+    establecimiento?: Array<{ id: string; nombre: string }>;
+  };
+}
+
+export interface GetUsersResult {
+  success: boolean;
+  data?: UserRecord[];
+  error?: string;
+}
+
+/**
+ * Fetches all users with their establecimiento expanded.
+ * Requires PocketBase admin credentials in environment variables.
+ */
+export async function getUsersAction(): Promise<GetUsersResult> {
+  const pb = getAdminPb();
+
+  const adminEmail = process.env.PB_ADMIN_EMAIL;
+  const adminPassword = process.env.PB_ADMIN_PASSWORD;
+
+  if (!adminEmail || !adminPassword) {
+    return { success: false, error: "Missing required environment variables for admin authentication." };
+  }
+
+  try {
+    await pb.admins.authWithPassword(adminEmail, adminPassword);
+
+    const records = await pb.collection("users").getFullList({
+      sort: "-created",
+      expand: "establecimiento",
+    });
+
+    return { success: true, data: records as unknown as UserRecord[] };
+  } catch (error) {
+    let detail = "An unknown error occurred";
+    if (error instanceof ClientResponseError) {
+      detail = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+    } else if (error instanceof Error) {
+      detail = error.message;
+    } else {
+      detail = String(error);
+    }
+    return { success: false, error: detail };
+  }
+}
+
 /**
  * Creates a new user and immediately marks them as verified.
  * Requires PocketBase admin credentials in environment variables.
  */
 export async function createUserAction(payload: CreateUserPayload): Promise<ActionResult> {
   const pb = getAdminPb();
-  
+
   const adminEmail = process.env.PB_ADMIN_EMAIL;
   const adminPassword = process.env.PB_ADMIN_PASSWORD;
 
@@ -89,6 +148,37 @@ export async function updateUserAction(id: string, payload: UpdateUserPayload): 
 
     await pb.collection("users").update(id, payload);
 
+    return { success: true };
+  } catch (error) {
+    let detail = "An unknown error occurred";
+    if (error instanceof ClientResponseError) {
+      detail = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+    } else if (error instanceof Error) {
+      detail = error.message;
+    } else {
+      detail = String(error);
+    }
+    return { success: false, error: detail };
+  }
+}
+
+/**
+ * Deletes a user by ID.
+ * Requires PocketBase admin credentials in environment variables.
+ */
+export async function deleteUserAction(id: string): Promise<ActionResult> {
+  const pb = getAdminPb();
+
+  const adminEmail = process.env.PB_ADMIN_EMAIL;
+  const adminPassword = process.env.PB_ADMIN_PASSWORD;
+
+  if (!adminEmail || !adminPassword) {
+    return { success: false, error: "Missing required environment variables for admin authentication." };
+  }
+
+  try {
+    await pb.admins.authWithPassword(adminEmail, adminPassword);
+    await pb.collection("users").delete(id);
     return { success: true };
   } catch (error) {
     let detail = "An unknown error occurred";

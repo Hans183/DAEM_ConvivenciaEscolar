@@ -32,12 +32,10 @@ export function ProtocolsTable() {
     try {
       let filter = "";
       if (isItinerante && user.establecimiento) {
-        const estArray = Array.isArray(user.establecimiento) 
-          ? user.establecimiento 
-          : [user.establecimiento];
-        
+        const estArray = Array.isArray(user.establecimiento) ? user.establecimiento : [user.establecimiento];
+
         if (estArray.length > 0) {
-          filter = estArray.map(id => `establecimiento = "${id}"`).join(" || ");
+          filter = estArray.map((id) => `establecimiento = "${id}"`).join(" || ");
         }
       } else if (!isAdmin && user.establecimiento) {
         filter = `establecimiento = "${user.establecimiento}"`;

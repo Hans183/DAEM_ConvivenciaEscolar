@@ -118,7 +118,11 @@ export const getColumns = ({ onEdit, onDelete, isAdmin, isItinerante }: ColumnsP
   {
     accessorKey: "curso_estudiante",
     header: "Curso",
-    cell: ({ row }) => <div>{row.getValue("curso_estudiante")}</div>,
+    cell: ({ row }) => {
+      const curso = row.getValue("curso_estudiante") as string;
+      const truncated = curso && curso.length > 20 ? `${curso.slice(0, 20)}…` : curso;
+      return <div title={curso}>{truncated}</div>;
+    },
   },
   {
     accessorKey: "nombre_apoderado",
@@ -132,7 +136,8 @@ export const getColumns = ({ onEdit, onDelete, isAdmin, isItinerante }: ColumnsP
           header: "Establecimiento",
           cell: ({ row }: { row: { original: DecRecord } }) => {
             const nombre = row.original.expand?.establecimiento?.nombre;
-            return <div>{nombre ?? "-"}</div>;
+            const truncated = nombre && nombre.length > 20 ? `${nombre.slice(0, 20)}…` : nombre;
+            return <div title={nombre ?? undefined}>{truncated ?? "-"}</div>;
           },
         } as ColumnDef<DecRecord>,
       ]

@@ -4,21 +4,13 @@ import { useEffect, useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, ChevronsUpDown } from "lucide-react";
-import type { AuthModel } from "pocketbase";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { createUserAction, updateUserAction, type UpdateUserPayload } from "@/app/actions/users";
+import { createUserAction, type UpdateUserPayload, type UserRecord, updateUserAction } from "@/app/actions/users";
 import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import {
   Dialog,
   DialogContent,
@@ -27,14 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -81,7 +66,7 @@ type UserFormValues = z.infer<typeof userFormSchema>;
 interface UserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  user?: AuthModel | null;
+  user?: UserRecord | null;
   onSuccess: () => void;
 }
 
@@ -93,7 +78,9 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
   useEffect(() => {
     const fetchEstablecimientos = async () => {
       try {
-        const records = await pb.collection("establecimientos").getFullList<{ id: string; nombre: string }>({ sort: "nombre" });
+        const records = await pb
+          .collection("establecimientos")
+          .getFullList<{ id: string; nombre: string }>({ sort: "nombre" });
         setEstablecimientos(records);
       } catch (error) {
         console.error("Failed to fetch establecimientos", error);
@@ -145,7 +132,8 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
   const onSubmit = async (data: UserFormValues) => {
     setLoading(true);
     try {
-      const establecimiento = Array.isArray(data.establecimiento) && data.establecimiento.length > 0 ? data.establecimiento : null;
+      const establecimiento =
+        Array.isArray(data.establecimiento) && data.establecimiento.length > 0 ? data.establecimiento : null;
 
       if (user) {
         const payload: UpdateUserPayload = {
@@ -249,11 +237,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
                   <FormItem>
                     <FormLabel>Contraseña</FormLabel>
                     <FormControl>
-                      <Input
-                        type="password"
-                        placeholder={user ? "********" : "Requerido"}
-                        {...field}
-                      />
+                      <Input type="password" placeholder={user ? "********" : "Requerido"} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -266,11 +250,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
                   <FormItem>
                     <FormLabel>Confirmar Contraseña</FormLabel>
                     <FormControl>
-                      <Input
-                        type="password"
-                        placeholder={user ? "********" : "Requerido"}
-                        {...field}
-                      />
+                      <Input type="password" placeholder={user ? "********" : "Requerido"} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -351,10 +331,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
                                 }}
                               >
                                 <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    valueArray.length === 0 ? "opacity-100" : "opacity-0",
-                                  )}
+                                  className={cn("mr-2 h-4 w-4", valueArray.length === 0 ? "opacity-100" : "opacity-0")}
                                 />
                                 Sin establecimiento
                               </CommandItem>
@@ -377,9 +354,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
                                       }
                                     }}
                                   >
-                                    <Check
-                                      className={cn("mr-2 h-4 w-4", isSelected ? "opacity-100" : "opacity-0")}
-                                    />
+                                    <Check className={cn("mr-2 h-4 w-4", isSelected ? "opacity-100" : "opacity-0")} />
                                     {est.nombre}
                                   </CommandItem>
                                 );

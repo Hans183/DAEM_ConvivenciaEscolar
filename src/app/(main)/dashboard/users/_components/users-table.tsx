@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Plus } from "lucide-react";
-import type { AuthModel } from "pocketbase";
 import { toast } from "sonner";
 
+import { deleteUserAction, getUsersAction, type UserRecord } from "@/app/actions/users";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import {
@@ -20,59 +20,58 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
-import { pb } from "@/lib/pocketbase";
 
 import { getColumns } from "./columns";
 import { UserDialog } from "./user-dialog";
 
 export function UsersTable() {
-  const [data, setData] = useState<AuthModel[]>([]);
+  const [data, setData] = useState<UserRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<AuthModel | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserRecord | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<AuthModel | null>(null);
+  const [userToDelete, setUserToDelete] = useState<UserRecord | null>(null);
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const records = await pb.collection("users").getFullList({
-        sort: "-created",
-        expand: "establecimiento",
-      });
-      setData(records as unknown as AuthModel[]);
-    } catch (error: any) {
-      if (error.isAbort) return; // Ignore auto-cancelled requests
+      const result = await getUsersAction();
+      if (!result.success || !result.data) {
+        throw new Error(result.error ?? "Error desconocido");
+      }
+      setData(result.data);
+    } catch (error) {
       console.error("Failed to fetch users:", error);
       toast.error("Error al obtener usuarios");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
 
   const handleCreate = () => {
     setSelectedUser(null);
     setDialogOpen(true);
   };
 
-  const handleEdit = (user: AuthModel) => {
+  const handleEdit = useCallback((user: UserRecord) => {
     setSelectedUser(user);
     setDialogOpen(true);
-  };
+  }, []);
 
-  const handleDeleteClick = (user: AuthModel) => {
+  const handleDeleteClick = useCallback((user: UserRecord) => {
     setUserToDelete(user);
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
   const handleConfirmDelete = async () => {
     if (!userToDelete) return;
     try {
-      await pb.collection("users").delete(userToDelete.id);
+      const result = await deleteUserAction(userToDelete.id);
+      if (!result.success) throw new Error(result.error);
       toast.success("Usuario eliminado correctamente");
       fetchUsers();
     } catch (error) {
@@ -84,7 +83,10 @@ export function UsersTable() {
     }
   };
 
-  const columns = useMemo(() => getColumns({ onEdit: handleEdit, onDelete: handleDeleteClick }), []);
+  const columns = useMemo(
+    () => getColumns({ onEdit: handleEdit, onDelete: handleDeleteClick }),
+    [handleEdit, handleDeleteClick],
+  );
 
   const table = useDataTableInstance({
     columns,

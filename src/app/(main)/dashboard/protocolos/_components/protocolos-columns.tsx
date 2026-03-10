@@ -10,7 +10,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -87,7 +86,8 @@ export const getColumns = ({ onEdit, onDelete, isAdmin }: GetColumnsProps): Colu
     header: "Establecimiento",
     cell: ({ row }) => {
       const nombre = row.original.expand?.establecimiento?.nombre;
-      return <div className="text-muted-foreground">{nombre ?? "—"}</div>;
+      const truncated = nombre && nombre.length > 20 ? `${nombre.slice(0, 20)}…` : nombre;
+      return <div className="text-muted-foreground" title={nombre ?? undefined}>{truncated ?? "—"}</div>;
     },
   });
 

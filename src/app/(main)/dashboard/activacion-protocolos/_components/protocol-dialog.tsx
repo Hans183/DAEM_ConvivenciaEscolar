@@ -10,14 +10,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import {
   Dialog,
   DialogContent,
@@ -26,23 +19,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUser } from "@/hooks/use-user";
 import { pb } from "@/lib/pocketbase";
 import { cn } from "@/lib/utils";
@@ -137,16 +117,14 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
         .getFullList({ sort: "nombre" })
         .then((r) => {
           const allEstablecimientos = r as unknown as Establecimiento[];
-          
+
           if (isAdmin) {
             setEstablecimientos(allEstablecimientos);
           } else if (isItinerante && user?.establecimiento) {
             // Assume user.establecimiento is an array of IDs for itinerante
-            const assignedIds = Array.isArray(user.establecimiento) 
-              ? user.establecimiento 
-              : [user.establecimiento];
-              
-            setEstablecimientos(allEstablecimientos.filter(e => assignedIds.includes(e.id)));
+            const assignedIds = Array.isArray(user.establecimiento) ? user.establecimiento : [user.establecimiento];
+
+            setEstablecimientos(allEstablecimientos.filter((e) => assignedIds.includes(e.id)));
           } else {
             // Standard/other roles, just load all to find their single name
             setEstablecimientos(allEstablecimientos);
@@ -350,26 +328,26 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
                 name="establecimiento"
                 render={({ field }) => {
                   const selected = establecimientos.find((e) => e.id === field.value);
-                        return (
-                          <FormItem className="flex flex-col">
-                            <FormLabel>Establecimiento</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger className={cn("mb-2 w-full", !selected && "text-muted-foreground")}>
-                                  <SelectValue placeholder="Seleccione un establecimiento" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {establecimientos.map((est) => (
-                                  <SelectItem key={est.id} value={est.id}>
-                                    {est.nombre.length > 50 ? `${est.nombre.substring(0, 50)}...` : est.nombre}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        );
+                  return (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Establecimiento</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger className={cn("mb-2 w-full", !selected && "text-muted-foreground")}>
+                            <SelectValue placeholder="Seleccione un establecimiento" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {establecimientos.map((est) => (
+                            <SelectItem key={est.id} value={est.id}>
+                              {est.nombre.length > 50 ? `${est.nombre.substring(0, 50)}...` : est.nombre}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  );
                 }}
               />
             ) : (

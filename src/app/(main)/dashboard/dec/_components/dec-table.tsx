@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
 import { useSearchParams } from "next/navigation";
 
 import { Plus } from "lucide-react";
@@ -38,9 +39,7 @@ export function DecTable() {
       // Parse establecimiento back from the stable key
       const establecimiento = JSON.parse(establecimientoKey) as string | string[] | null;
       if (isItinerante && establecimiento) {
-        const estArray = Array.isArray(establecimiento)
-          ? establecimiento
-          : [establecimiento];
+        const estArray = Array.isArray(establecimiento) ? establecimiento : [establecimiento];
 
         if (estArray.length > 0) {
           filter = estArray.map((id) => `establecimiento = "${id}"`).join(" || ");
@@ -75,19 +74,22 @@ export function DecTable() {
     setDialogOpen(true);
   }, []);
 
-  const handleDelete = useCallback(async (record: DecRecord) => {
-    if (!confirm("¿Está seguro de eliminar este registro?")) return;
+  const handleDelete = useCallback(
+    async (record: DecRecord) => {
+      if (!confirm("¿Está seguro de eliminar este registro?")) return;
 
-    try {
-      await pb.collection("DEC").delete(record.id);
-      toast.success("Registro eliminado correctamente");
-      fetchData();
-    } catch (err: unknown) {
-      const error = err as { isAbort?: boolean };
-      console.error("Failed to delete DEC record:", error);
-      toast.error("Error al eliminar el registro");
-    }
-  }, [fetchData]);
+      try {
+        await pb.collection("DEC").delete(record.id);
+        toast.success("Registro eliminado correctamente");
+        fetchData();
+      } catch (err: unknown) {
+        const error = err as { isAbort?: boolean };
+        console.error("Failed to delete DEC record:", error);
+        toast.error("Error al eliminar el registro");
+      }
+    },
+    [fetchData],
+  );
 
   useEffect(() => {
     if (userId !== null) {
@@ -98,7 +100,7 @@ export function DecTable() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: Handle specific search params sync
   useEffect(() => {
     const decId = searchParams.get("decId");
-    
+
     if (!decId) {
       handledDecId.current = null;
     } else if (data.length > 0 && handledDecId.current !== decId) {
@@ -106,7 +108,7 @@ export function DecTable() {
       if (record) {
         handledDecId.current = decId;
         handleEdit(record);
-        
+
         // Use history.replaceState to remove decId without triggering
         // a searchParams re-render loop in Next.js
         const params = new URLSearchParams(window.location.search);

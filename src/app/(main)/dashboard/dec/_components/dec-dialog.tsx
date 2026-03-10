@@ -11,13 +11,7 @@ import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -125,86 +119,88 @@ const consecuentesOptions = [
   "Otro:",
 ];
 
-const decFormSchema = z.object({
-  dia: z.string().min(1, "La fecha es requerida"),
-  nombre_estudiante: z.string().min(1, "Requerido"),
-  edad_estudiante: z.coerce.number().min(1, "Requerido"),
-  curso_estudiante: z.string().min(1, "Requerido"),
-  profe_jefe_estudiante: z.string().min(1, "Requerido"),
-  nombre_apoderado: z.string().min(1, "Requerido"),
-  fono_apoderado: z.string().min(1, "Requerido"),
-  encargado_pi: z.string().optional(),
-  acompanante_interno_pi: z.string().optional(),
-  acompanante_externo_pi: z.string().optional(),
-  ea_docente: z.string().optional(),
-  ea_asistente: z.string().optional(),
-  ea_edu_pie: z.string().optional(),
-  hora: z.string().min(1, "Requerido"),
-  hora_otro: z.string().optional(),
-  asignaturas: z.string().min(1, "Requerido"),
-  asignatura_otra: z.string().optional(),
-  antecedentes: z.any().transform((val) => {
-    if (Array.isArray(val)) return val;
-    if (typeof val === "string")
-      return val
-        .split(",")
-        .map((v) => v.trim())
-        .filter(Boolean);
-    return [];
-  }),
-  ConflictoConEstudiante_antecedentes: z.string().optional(),
-  ConflictoConProfesor_antecedentes: z.string().optional(),
-  otra_antecedentes: z.string().optional(),
-  conductas: z.any().transform((val) => {
-    if (Array.isArray(val)) return val;
-    if (typeof val === "string")
-      return val
-        .split(",")
-        .map((v) => v.trim())
-        .filter(Boolean);
-    return [];
-  }),
-  Agresion_fisica_conductas: z.string().optional(),
-  otro_conductas: z.string().optional(),
-  descripcion_conductas: z.string().optional(),
-  duracion_conductas: z.string().optional(),
-  consecuentes: z.any().transform((val) => {
-    if (Array.isArray(val)) return val;
-    if (typeof val === "string")
-      return val
-        .split(",")
-        .map((v) => v.trim())
-        .filter(Boolean);
-    return [];
-  }),
-  otro_consecuentes: z.string().optional(),
-  funciona_medida: z.boolean().default(false),
-  propuesta_mejora: z.string().optional(),
-  establecimiento: z.string().optional(),
-  nivel_dec: z.string().min(1, "Debe seleccionar un nivel"),
-}).superRefine((data, ctx) => {
-  if (data.nivel_dec === "Nivel 1") {
-    if (!data.ea_docente?.trim()) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Requerido", path: ["ea_docente"] });
+const decFormSchema = z
+  .object({
+    dia: z.string().min(1, "La fecha es requerida"),
+    nombre_estudiante: z.string().min(1, "Requerido"),
+    edad_estudiante: z.coerce.number().min(1, "Requerido"),
+    curso_estudiante: z.string().min(1, "Requerido"),
+    profe_jefe_estudiante: z.string().min(1, "Requerido"),
+    nombre_apoderado: z.string().min(1, "Requerido"),
+    fono_apoderado: z.string().min(1, "Requerido"),
+    encargado_pi: z.string().optional(),
+    acompanante_interno_pi: z.string().optional(),
+    acompanante_externo_pi: z.string().optional(),
+    ea_docente: z.string().optional(),
+    ea_asistente: z.string().optional(),
+    ea_edu_pie: z.string().optional(),
+    hora: z.string().min(1, "Requerido"),
+    hora_otro: z.string().optional(),
+    asignaturas: z.string().min(1, "Requerido"),
+    asignatura_otra: z.string().optional(),
+    antecedentes: z.any().transform((val) => {
+      if (Array.isArray(val)) return val;
+      if (typeof val === "string")
+        return val
+          .split(",")
+          .map((v) => v.trim())
+          .filter(Boolean);
+      return [];
+    }),
+    ConflictoConEstudiante_antecedentes: z.string().optional(),
+    ConflictoConProfesor_antecedentes: z.string().optional(),
+    otra_antecedentes: z.string().optional(),
+    conductas: z.any().transform((val) => {
+      if (Array.isArray(val)) return val;
+      if (typeof val === "string")
+        return val
+          .split(",")
+          .map((v) => v.trim())
+          .filter(Boolean);
+      return [];
+    }),
+    Agresion_fisica_conductas: z.string().optional(),
+    otro_conductas: z.string().optional(),
+    descripcion_conductas: z.string().optional(),
+    duracion_conductas: z.string().optional(),
+    consecuentes: z.any().transform((val) => {
+      if (Array.isArray(val)) return val;
+      if (typeof val === "string")
+        return val
+          .split(",")
+          .map((v) => v.trim())
+          .filter(Boolean);
+      return [];
+    }),
+    otro_consecuentes: z.string().optional(),
+    funciona_medida: z.boolean().default(false),
+    propuesta_mejora: z.string().optional(),
+    establecimiento: z.string().optional(),
+    nivel_dec: z.string().min(1, "Debe seleccionar un nivel"),
+  })
+  .superRefine((data, ctx) => {
+    if (data.nivel_dec === "Nivel 1") {
+      if (!data.ea_docente?.trim()) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Requerido", path: ["ea_docente"] });
+      }
+      if (!data.ea_asistente?.trim()) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Requerido", path: ["ea_asistente"] });
+      }
+      if (!data.ea_edu_pie?.trim()) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Requerido", path: ["ea_edu_pie"] });
+      }
+    } else if (data.nivel_dec === "Nivel 2" || data.nivel_dec === "Nivel 3") {
+      if (!data.encargado_pi?.trim()) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Requerido", path: ["encargado_pi"] });
+      }
+      if (!data.acompanante_interno_pi?.trim()) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Requerido", path: ["acompanante_interno_pi"] });
+      }
+      if (data.nivel_dec === "Nivel 3" && !data.acompanante_externo_pi?.trim()) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Requerido", path: ["acompanante_externo_pi"] });
+      }
     }
-    if (!data.ea_asistente?.trim()) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Requerido", path: ["ea_asistente"] });
-    }
-    if (!data.ea_edu_pie?.trim()) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Requerido", path: ["ea_edu_pie"] });
-    }
-  } else if (data.nivel_dec === "Nivel 2" || data.nivel_dec === "Nivel 3") {
-    if (!data.encargado_pi?.trim()) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Requerido", path: ["encargado_pi"] });
-    }
-    if (!data.acompanante_interno_pi?.trim()) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Requerido", path: ["acompanante_interno_pi"] });
-    }
-    if (data.nivel_dec === "Nivel 3" && !data.acompanante_externo_pi?.trim()) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Requerido", path: ["acompanante_externo_pi"] });
-    }
-  }
-});
+  });
 
 type DecFormValues = z.infer<typeof decFormSchema>;
 
@@ -229,9 +225,12 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
   const hasGlobalAccess = isAdmin || isItinerante;
   // Serialize establecimiento to a stable string for dep-array comparisons
   const establecimientoKey = JSON.stringify(currentUser?.establecimiento ?? null);
-  const userEstablecimiento: string | null = typeof currentUser?.establecimiento === "string"
-    ? currentUser.establecimiento
-    : null;
+  const userEstablecimiento: string | null =
+    typeof currentUser?.establecimiento === "string"
+      ? currentUser.establecimiento
+      : Array.isArray(currentUser?.establecimiento) && currentUser.establecimiento.length > 0
+        ? (currentUser.establecimiento[0] as string)
+        : null;
 
   const [loading, setLoading] = useState(false);
   const [establecimientos, setEstablecimientos] = useState<Establecimiento[]>([]);
@@ -254,12 +253,14 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
         } else if (isItinerante && rawEst) {
           const assignedIds = Array.isArray(rawEst) ? rawEst : [rawEst];
           setEstablecimientos(allEstablecimientos.filter((e) => assignedIds.includes(e.id)));
+        } else if (userEstablecimiento) {
+          setEstablecimientos(allEstablecimientos.filter((e) => e.id === userEstablecimiento));
         } else {
-          setEstablecimientos(allEstablecimientos);
+          setEstablecimientos([]);
         }
       })
       .catch(console.error);
-  }, [open, isAdmin, isItinerante, establecimientoKey]);
+  }, [open, isAdmin, isItinerante, establecimientoKey, userEstablecimiento]);
 
   const form = useForm<DecFormValues>({
     resolver: zodResolver(decFormSchema),
@@ -486,9 +487,10 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                             <p className="font-medium text-sm">Establecimiento</p>
                             <p className="flex h-9 w-full items-center rounded-md border border-input bg-muted px-3 py-1 text-muted-foreground text-sm">
                               {(() => {
+                                // For regular users, we show their pre-filled establishment
                                 const nombre = establecimientos.find((e) => e.id === userEstablecimiento)?.nombre;
                                 if (!nombre) return "Sin establecimiento asignado";
-                                return nombre.length > 40 ? `${nombre.substring(0, 40)}...` : nombre;
+                                return nombre.length > 50 ? `${nombre.substring(0, 50)}...` : nombre;
                               })()}
                             </p>
                           </div>
@@ -635,7 +637,8 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
 
                       {!form.watch("nivel_dec") && (
                         <div className="rounded-md bg-muted p-4 text-center text-muted-foreground text-sm">
-                          Seleccione el <strong>Nivel DEC</strong> para visualizar los campos de personal a cargo correspondientes.
+                          Seleccione el <strong>Nivel DEC</strong> para visualizar los campos de personal a cargo
+                          correspondientes.
                         </div>
                       )}
 
@@ -786,10 +789,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                                     <Button
                                       variant="outline"
                                       role="combobox"
-                                      className={cn(
-                                        "w-full justify-between",
-                                        !field.value && "text-muted-foreground",
-                                      )}
+                                      className={cn("w-full justify-between", !field.value && "text-muted-foreground")}
                                     >
                                       {field.value
                                         ? cursosOptions.find((curso) => curso === field.value)
@@ -802,7 +802,10 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                                   <Command
                                     filter={(value, search) => {
                                       const normalize = (str: string) =>
-                                        str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+                                        str
+                                          .normalize("NFD")
+                                          .replace(/[\u0300-\u036f]/g, "")
+                                          .toLowerCase();
                                       if (normalize(value).includes(normalize(search))) return 1;
                                       return 0;
                                     }}

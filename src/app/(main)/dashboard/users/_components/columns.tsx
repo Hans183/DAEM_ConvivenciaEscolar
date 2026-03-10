@@ -2,9 +2,9 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { Copy, Edit, MoreHorizontal, Trash } from "lucide-react";
-import type { AuthModel } from "pocketbase";
+import { Edit, MoreHorizontal, Trash } from "lucide-react";
 
+import type { UserRecord } from "@/app/actions/users";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -22,11 +22,11 @@ import { pb } from "@/lib/pocketbase";
 import { getInitials } from "@/lib/utils";
 
 interface GetColumnsProps {
-  onEdit: (user: AuthModel) => void;
-  onDelete: (user: AuthModel) => void;
+  onEdit: (user: UserRecord) => void;
+  onDelete: (user: UserRecord) => void;
 }
 
-export const getColumns = ({ onEdit, onDelete }: GetColumnsProps): ColumnDef<AuthModel>[] => [
+export const getColumns = ({ onEdit, onDelete }: GetColumnsProps): ColumnDef<UserRecord>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -79,8 +79,10 @@ export const getColumns = ({ onEdit, onDelete }: GetColumnsProps): ColumnDef<Aut
     cell: ({ row }) => {
       const user = row.original;
       if (!user) return null;
-      const establecimiento = user.expand?.establecimiento?.nombre;
-      return <div className="w-[150px] truncate">{establecimiento || "Sin asignar"}</div>;
+      const establecimientos = user.expand?.establecimiento;
+      const nombres = Array.isArray(establecimientos) ? establecimientos.map((e) => e.nombre).join(", ") : null;
+      const truncated = nombres && nombres.length > 20 ? `${nombres.slice(0, 20)}…` : nombres;
+      return <div title={nombres ?? undefined}>{truncated || "Sin asignar"}</div>;
     },
   },
   {
