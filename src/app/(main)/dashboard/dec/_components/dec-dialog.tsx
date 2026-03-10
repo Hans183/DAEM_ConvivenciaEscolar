@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { pb } from "@/lib/pocketbase";
 import { cn } from "@/lib/utils";
+import { formatRut, validateRut } from "@/lib/rut-utils";
 
 import type { DecRecord } from "./columns";
 
@@ -123,6 +124,9 @@ const decFormSchema = z
   .object({
     dia: z.string().min(1, "La fecha es requerida"),
     nombre_estudiante: z.string().min(1, "Requerido"),
+    rut_estudiante: z.string().refine((rut) => validateRut(rut), {
+      message: "RUT inválido",
+    }),
     edad_estudiante: z.coerce.number().min(1, "Requerido"),
     curso_estudiante: z.string().min(1, "Requerido"),
     profe_jefe_estudiante: z.string().min(1, "Requerido"),
@@ -267,6 +271,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
     defaultValues: {
       dia: new Date().toISOString().slice(0, 16),
       nombre_estudiante: "",
+      rut_estudiante: "",
       edad_estudiante: 0,
       curso_estudiante: "",
       profe_jefe_estudiante: "",
@@ -336,6 +341,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
       reset({
         dia: new Date().toISOString().slice(0, 16),
         nombre_estudiante: "",
+        rut_estudiante: "",
         edad_estudiante: 0,
         curso_estudiante: "",
         profe_jefe_estudiante: "",
@@ -755,6 +761,32 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                               <FormLabel>Nombre Estudiante</FormLabel>
                               <FormControl>
                                 <Input {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="rut_estudiante"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>RUT Estudiante</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="12.345.678-K"
+                                  {...field}
+                                  onChange={(e) => {
+                                    const formatted = formatRut(e.target.value);
+                                    field.onChange(formatted);
+                                  }}
+                                  onFocus={(e) => {
+                                    if (e.target.value.startsWith("0")) {
+                                      const clean = e.target.value.replace(/^0+/, "");
+                                      field.onChange(clean);
+                                    }
+                                  }}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1288,6 +1320,65 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                         />
                       </div>
                     </div>
+
+                    {/* Resumen de Errores */}
+                    {Object.keys(form.formState.errors).length > 0 && (
+                      <div className="rounded-lg border border-red-200 bg-red-50 p-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <h4 className="flex items-center font-semibold text-red-800 text-sm">
+                          <X className="mr-2 h-4 w-4" />
+                          Se requiere completar los siguientes campos:
+                        </h4>
+                        <ul className="mt-2 list-inside list-disc space-y-1 text-red-700 text-xs">
+                          {(() => {
+                            const errorEntries = Object.entries(form.formState.errors);
+                            const fieldLabels: Record<string, { label: string; step: number }> = {
+                              dia: { label: "Fecha y Hora", step: 1 },
+                              hora: { label: "Bloque/Hora", step: 1 },
+                              asignaturas: { label: "Asignatura", step: 1 },
+                              nivel_dec: { label: "Nivel DEC", step: 1 },
+                              ea_docente: { label: "Docente", step: 1 },
+                              ea_asistente: { label: "Asistente", step: 1 },
+                              ea_edu_pie: { label: "Ed. Diferencial", step: 1 },
+                              encargado_pi: { label: "Encargado PI", step: 1 },
+                              acompanante_interno_pi: { label: "Acompañante Interno", step: 1 },
+                              acompanante_externo_pi: { label: "Acompañante Externo", step: 1 },
+                              nombre_estudiante: { label: "Nombre Estudiante", step: 2 },
+                              rut_estudiante: { label: "RUT Estudiante", step: 2 },
+                              edad_estudiante: { label: "Edad", step: 2 },
+                              curso_estudiante: { label: "Curso", step: 2 },
+                              profe_jefe_estudiante: { label: "Profesor Jefe", step: 2 },
+                              nombre_apoderado: { label: "Nombre Apoderado", step: 2 },
+                              fono_apoderado: { label: "Fono Apoderado", step: 2 },
+                              antecedentes: { label: "Antecedentes", step: 2 },
+                              conductas: { label: "Conductas", step: 3 },
+                              duracion_conductas: { label: "Duración de conducta", step: 3 },
+                              descripcion_conductas: { label: "Descripción adicional", step: 3 },
+                              consecuentes: { label: "Medidas aplicadas", step: 4 },
+                              funciona_medida: { label: "¿Funciona la medida?", step: 4 },
+                            };
+
+                            return errorEntries.map(([key, error]) => {
+                              const info = fieldLabels[key];
+                              return (
+                                <li key={key}>
+                                  {info ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => setStep(info.step)}
+                                      className="text-left font-medium underline-offset-2 hover:underline"
+                                    >
+                                      Paso {info.step}: {info.label} ({error?.message as string})
+                                    </button>
+                                  ) : (
+                                    `${key}: ${error?.message as string}`
+                                  )}
+                                </li>
+                              );
+                            });
+                          })()}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1331,7 +1422,14 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                       Siguiente Paso
                     </Button>
                   ) : (
-                    <Button type="button" onClick={form.handleSubmit(onSubmit)} disabled={loading}>
+                    <Button
+                      type="button"
+                      onClick={form.handleSubmit(onSubmit, (errors) => {
+                        console.log("Validation errors:", errors);
+                        toast.error("Existen errores de validación. Revise el resumen en el Paso 4.");
+                      })}
+                      disabled={loading}
+                    >
                       {loading && <span className="mr-2 animate-spin">⏳</span>}
                       {record ? "Guardar cambios" : "Crear registro DEC"}
                     </Button>

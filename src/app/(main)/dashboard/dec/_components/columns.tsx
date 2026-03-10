@@ -23,6 +23,7 @@ export type DecRecord = {
   updated: string;
   dia: string;
   nombre_estudiante: string;
+  rut_estudiante: string;
   edad_estudiante: number;
   curso_estudiante: string;
   profe_jefe_estudiante: string;

@@ -153,6 +153,7 @@ export const generateDecPDF = (record: DecRecord) => {
 
   addSectionTitle("II. ANTECEDENTES DEL ESTUDIANTE Y APODERADO");
   addField("Nombre Estudiante", record.nombre_estudiante);
+  addField("RUT", record.rut_estudiante);
   addTwoFields(
     "Curso",
     record.curso_estudiante,
