@@ -83,6 +83,8 @@ export function ProtocoloDialog({
   });
 
   useEffect(() => {
+    if (!open) return;
+
     if (protocolo) {
       form.reset({
         nombre: protocolo.nombre,
@@ -98,7 +100,7 @@ export function ProtocoloDialog({
         es_comunal: false,
       });
     }
-  }, [protocolo, form, isAdmin, userEstablecimiento]);
+  }, [protocolo, form, isAdmin, userEstablecimiento, open]);
 
   const onSubmit = async (data: ProtocoloFormValues) => {
     setLoading(true);

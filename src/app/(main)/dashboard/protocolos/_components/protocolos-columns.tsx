@@ -68,7 +68,15 @@ export const getColumns = ({ onEdit, onDelete, isAdmin }: GetColumnsProps): Colu
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-      cell: ({ row }) => <div className="font-medium">{row.getValue("nombre")}</div>,
+      cell: ({ row }) => {
+        const nombre = row.getValue("nombre") as string;
+        const truncated = nombre.length > 50 ? `${nombre.slice(0, 50)}…` : nombre;
+        return (
+          <div className="font-medium" title={nombre}>
+            {truncated}
+          </div>
+        );
+      },
     },
 
     /* Descripción */
