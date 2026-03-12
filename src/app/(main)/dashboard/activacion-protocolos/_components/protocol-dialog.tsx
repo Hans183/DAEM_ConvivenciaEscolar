@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, ChevronsUpDown } from "lucide-react";
@@ -84,55 +84,21 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
   // useUser() reads auth state safely client-side only (avoids hydration mismatch)
   const user = useUser();
   const isAdmin = user?.role?.toLowerCase() === "admin";
-  const userEstablecimiento = user?.establecimiento as string | undefined;
-  // Itinerantes need to choose establishing since they don't have a single fixed one
-  const isItinerante = user?.role?.toLowerCase() === "itinerante";
-  const hasGlobalAccess = isAdmin || isItinerante;
+
+  const assignedEstsIds = useMemo(() => {
+    if (!user?.establecimiento) return [];
+    return Array.isArray(user.establecimiento) ? user.establecimiento : [user.establecimiento];
+  }, [user]);
+
+  // Can choose if admin OR has multiple establishments
+  const canChooseEstablecimiento = isAdmin || assignedEstsIds.length > 1;
+  const singleEstId = assignedEstsIds.length === 1 ? assignedEstsIds[0] : null;
 
   const [loading, setLoading] = useState(false);
+  const [fetchingProtocols, setFetchingProtocols] = useState(false);
   const [protocols, setProtocols] = useState<Protocol[]>([]);
   const [establecimientos, setEstablecimientos] = useState<Establecimiento[]>([]);
   const [comboboxOpen, setComboboxOpen] = useState(false);
-
-  // Cargar lista de protocolos
-  useEffect(() => {
-    const fetchProtocols = async () => {
-      try {
-        const records = await pb.collection("protocolos").getFullList();
-        setProtocols(records as unknown as Protocol[]);
-      } catch (error) {
-        if (!(error instanceof ClientResponseError && error.isAbort)) {
-          console.error("Failed to fetch protocols:", error);
-          toast.error("Error al cargar lista de protocolos");
-        }
-      }
-    };
-    fetchProtocols();
-  }, []);
-
-  // Cargar establecimientos
-  useEffect(() => {
-    if (open) {
-      pb.collection("establecimientos")
-        .getFullList({ sort: "nombre" })
-        .then((r) => {
-          const allEstablecimientos = r as unknown as Establecimiento[];
-
-          if (isAdmin) {
-            setEstablecimientos(allEstablecimientos);
-          } else if (isItinerante && user?.establecimiento) {
-            // Assume user.establecimiento is an array of IDs for itinerante
-            const assignedIds = Array.isArray(user.establecimiento) ? user.establecimiento : [user.establecimiento];
-
-            setEstablecimientos(allEstablecimientos.filter((e) => assignedIds.includes(e.id)));
-          } else {
-            // Standard/other roles, just load all to find their single name
-            setEstablecimientos(allEstablecimientos);
-          }
-        })
-        .catch(console.error);
-    }
-  }, [open, isAdmin, isItinerante, user]);
 
   // Configurar formulario
   const form = useForm<ProtocolFormValues>({
@@ -144,6 +110,61 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
       establecimiento: "",
     },
   });
+
+  // Cargar lista de protocolos según el establecimiento seleccionado
+  const selectedEst = form.watch("establecimiento");
+
+  useEffect(() => {
+    if (!selectedEst) {
+      setProtocols([]);
+      return;
+    }
+
+    const fetchProtocols = async () => {
+      setFetchingProtocols(true);
+      try {
+        const records = await pb.collection("protocolos").getFullList({
+          filter: `establecimiento = "${selectedEst}"`,
+          sort: "nombre",
+        });
+        setProtocols(records as unknown as Protocol[]);
+
+        // Si el protocolo actual no está en la nueva lista, resetearlo
+        const currentProto = form.getValues("protocolo");
+        if (currentProto && !records.find((r) => r.id === currentProto)) {
+          form.setValue("protocolo", "");
+        }
+      } catch (error) {
+        if (!(error instanceof ClientResponseError && error.isAbort)) {
+          console.error("Failed to fetch protocols:", error);
+          toast.error("Error al cargar lista de protocolos");
+        }
+      } finally {
+        setFetchingProtocols(false);
+      }
+    };
+
+    fetchProtocols();
+  }, [selectedEst, form]);
+
+  // Cargar establecimientos
+  useEffect(() => {
+    if (open) {
+      pb.collection("establecimientos")
+        .getFullList({ sort: "nombre" })
+        .then((r) => {
+          const allEstablecimientos = r as unknown as Establecimiento[];
+
+          if (isAdmin) {
+            setEstablecimientos(allEstablecimientos);
+          } else {
+            // All other roles only see their assigned establishments
+            setEstablecimientos(allEstablecimientos.filter((e) => assignedEstsIds.includes(e.id)));
+          }
+        })
+        .catch(console.error);
+    }
+  }, [open, isAdmin, assignedEstsIds]);
 
   // Resetear formulario cuando cambia el protocolo
   useEffect(() => {
@@ -161,11 +182,11 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
           meses: "",
           cantidad: 0,
           protocolo: "",
-          establecimiento: hasGlobalAccess ? "" : (userEstablecimiento ?? ""),
+          establecimiento: canChooseEstablecimiento ? "" : (singleEstId ?? ""),
         });
       }
     }
-  }, [form, protocol, open, hasGlobalAccess, userEstablecimiento]);
+  }, [form, protocol, open, canChooseEstablecimiento, singleEstId]);
 
   // Enviar formulario
   const onSubmit = async (data: ProtocolFormValues) => {
@@ -175,7 +196,7 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
         meses: data.meses,
         cantidad: data.cantidad,
         protocolo: data.protocolo,
-        establecimiento: hasGlobalAccess ? data.establecimiento || null : userEstablecimiento || null,
+        establecimiento: canChooseEstablecimiento ? data.establecimiento || null : singleEstId || null,
       };
       if (protocol) {
         await pb.collection("activacion_protocolos").update(protocol.id, payload);
@@ -273,16 +294,21 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
                           role="combobox"
                           aria-expanded={comboboxOpen}
                           className={cn("w-full justify-between", !field.value && "text-muted-foreground")}
+                          disabled={!selectedEst || fetchingProtocols}
                         >
-                          {field.value
-                            ? (() => {
-                                const selected = protocols.find((p) => p.id === field.value);
-                                const name = selected
-                                  ? selected.item || selected.nombre || selected.name || selected.id
-                                  : "Protocolo no encontrado";
-                                return name.length > 50 ? `${name.slice(0, 50)}…` : name;
-                              })()
-                            : "Seleccione un protocolo"}
+                          {fetchingProtocols
+                            ? "Cargando protocolos..."
+                            : field.value
+                              ? (() => {
+                                  const selected = protocols.find((p) => p.id === field.value);
+                                  const name = selected
+                                    ? selected.item || selected.nombre || selected.name || selected.id
+                                    : "Protocolo no encontrado";
+                                  return name.length > 50 ? `${name.slice(0, 50)}…` : name;
+                                })()
+                              : protocols.length === 0 && selectedEst
+                                ? "Sin protocolos disponibles"
+                                : "Seleccione un protocolo"}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </FormControl>
@@ -291,38 +317,56 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
                       <Command>
                         <CommandInput placeholder="Buscar protocolo..." />
                         <CommandList onWheel={(e) => e.stopPropagation()}>
-                          <CommandEmpty>No se encontraron protocolos.</CommandEmpty>
-                          <CommandGroup>
-                            {protocols.map((p) => {
-                              const displayValue = p.item || p.nombre || p.name || p.id;
-                              return (
-                                <CommandItem
-                                  value={displayValue}
-                                  key={p.id}
-                                  onSelect={() => {
-                                    form.setValue("protocolo", p.id);
-                                    setComboboxOpen(false);
-                                  }}
-                                >
-                                  <Check
-                                    className={cn("mr-2 h-4 w-4", p.id === field.value ? "opacity-100" : "opacity-0")}
-                                  />
-                                  {displayValue}
-                                </CommandItem>
-                              );
-                            })}
-                          </CommandGroup>
+                          {fetchingProtocols ? (
+                            <div className="p-4 text-center text-sm text-muted-foreground">Cargando...</div>
+                          ) : protocols.length === 0 ? (
+                            <div className="p-4 text-center text-sm text-yellow-600 font-medium">
+                              Este establecimiento no tiene protocolos definidos.
+                            </div>
+                          ) : (
+                            <>
+                              <CommandEmpty>No se encontraron protocolos.</CommandEmpty>
+                              <CommandGroup>
+                                {protocols.map((p) => {
+                                  const displayValue = p.item || p.nombre || p.name || p.id;
+                                  return (
+                                    <CommandItem
+                                      value={displayValue}
+                                      key={p.id}
+                                      onSelect={() => {
+                                        form.setValue("protocolo", p.id);
+                                        setComboboxOpen(false);
+                                      }}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          p.id === field.value ? "opacity-100" : "opacity-0",
+                                        )}
+                                      />
+                                      {displayValue}
+                                    </CommandItem>
+                                  );
+                                })}
+                              </CommandGroup>
+                            </>
+                          )}
                         </CommandList>
                       </Command>
                     </PopoverContent>
                   </Popover>
+                  {protocols.length === 0 && selectedEst && !fetchingProtocols && (
+                    <p className="text-[0.8rem] font-medium text-yellow-600 mt-1">
+                      ⚠️ Atención: No hay protocolos configurados para este establecimiento.
+                    </p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
             />
 
             {/* Campo Establecimiento */}
-            {hasGlobalAccess ? (
+            {canChooseEstablecimiento ? (
               <FormField
                 control={form.control}
                 name="establecimiento"
@@ -354,7 +398,7 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
               <div className="space-y-1">
                 <p className="font-medium text-sm">Establecimiento</p>
                 <p className="flex h-9 w-full items-center rounded-md border border-input bg-muted px-3 py-1 text-muted-foreground text-sm">
-                  {establecimientos.find((e) => e.id === userEstablecimiento)?.nombre ?? "Sin establecimiento asignado"}
+                  {establecimientos.find((e) => e.id === singleEstId)?.nombre ?? "Sin establecimiento asignado"}
                 </p>
               </div>
             )}

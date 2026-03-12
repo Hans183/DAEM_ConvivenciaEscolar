@@ -15,7 +15,7 @@ import { ChartDecTendencia } from "./chart-dec-tendencia";
 import { ChartProtocolosBar } from "./chart-protocolos-bar";
 import { KpiCards } from "./kpi-cards";
 import { ResumenDecTable } from "./resumen-table";
-import type { DashboardData } from "./types";
+import type { DashboardData, DecRecord, EstablecimientoRecord, ProtocolRecord } from "./types";
 
 const MESES_ES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
@@ -31,15 +31,16 @@ function getLastNMonths(n: number): string[] {
 
 function formatMesLabel(yyyymm: string): string {
   const [y, m] = yyyymm.split("-");
-  return `${MESES_ES[parseInt(m) - 1]} ${y.slice(2)}`;
+  return `${MESES_ES[parseInt(m, 10) - 1]} ${y.slice(2)}`;
 }
 
 function computeDashboardData(
-  decRecords: any[],
-  protocolRecords: any[],
-  filtroEstablecimiento: string | null, // null = global
+  decRecords: DecRecord[],
+  protocolRecords: ProtocolRecord[],
+  filtroEstablecimiento: string | null, // null = global (ID)
   isAdmin: boolean,
-): DashboardData & { establecimientos: string[] } {
+  allEsts: EstablecimientoRecord[],
+): DashboardData & { establecimientos: EstablecimientoRecord[] } {
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -48,16 +49,10 @@ function computeDashboardData(
 
   // Filter by establecimiento if selected
   const dec = filtroEstablecimiento
-    ? decRecords.filter(
-        (r) =>
-          r.expand?.establecimiento?.nombre === filtroEstablecimiento || r.establecimiento === filtroEstablecimiento,
-      )
+    ? decRecords.filter((r) => r.establecimiento === filtroEstablecimiento)
     : decRecords;
   const proto = filtroEstablecimiento
-    ? protocolRecords.filter(
-        (r) =>
-          r.expand?.establecimiento?.nombre === filtroEstablecimiento || r.establecimiento === filtroEstablecimiento,
-      )
+    ? protocolRecords.filter((r) => r.establecimiento === filtroEstablecimiento)
     : protocolRecords;
 
   // Basic counts
@@ -74,43 +69,43 @@ function computeDashboardData(
   const medidasEfectivas = dec.filter((r) => r.funciona_medida === true).length;
 
   // Protocolos
-  const totalProtocolos = proto.reduce((s: number, r: any) => s + (Number(r.cantidad) || 0), 0);
+  const totalProtocolos = proto.reduce((s: number, r: ProtocolRecord) => s + (Number(r.cantidad) || 0), 0);
   const protocolosEsteMes = proto
-    .filter((r: any) => r.meses === currentMonth || r.created?.slice(0, 7) === currentMonth)
-    .reduce((s: number, r: any) => s + (Number(r.cantidad) || 0), 0);
+    .filter((r: ProtocolRecord) => r.meses === currentMonth || r.created?.slice(0, 7) === currentMonth)
+    .reduce((s: number, r: ProtocolRecord) => s + (Number(r.cantidad) || 0), 0);
   const protocolosMesAnterior = proto
-    .filter((r: any) => r.meses === prevMonth || r.created?.slice(0, 7) === prevMonth)
-    .reduce((s: number, r: any) => s + (Number(r.cantidad) || 0), 0);
+    .filter((r: ProtocolRecord) => r.meses === prevMonth || r.created?.slice(0, 7) === prevMonth)
+    .reduce((s: number, r: ProtocolRecord) => s + (Number(r.cantidad) || 0), 0);
   const protocolosTrend =
     protocolosMesAnterior > 0
       ? Math.round(((protocolosEsteMes - protocolosMesAnterior) / protocolosMesAnterior) * 100)
       : undefined;
 
-  // Establecimientos activos
+  // Establecimientos activos count
   const estabelsSet = new Set<string>();
   [...dec, ...proto].forEach((r) => {
-    const nombre = r.expand?.establecimiento?.nombre;
-    if (nombre) estabelsSet.add(nombre);
+    if (r.establecimiento) estabelsSet.add(r.establecimiento);
   });
   const establecimientosActivos = estabelsSet.size;
-  const establecimientos = Array.from(estabelsSet).sort();
 
   // DEC por mes chart (last 6 months)
   let decPorMes: DashboardData["decPorMes"] = [];
   if (isAdmin && !filtroEstablecimiento) {
-    // Lines per establecimiento
-    const estList = establecimientos.slice(0, 5); // max 5 para no saturar
+    // Lines per establecimiento (top 5 by activity)
+    const activeEstsIds = Array.from(estabelsSet).slice(0, 5);
+    const estNamesMap = new Map(allEsts.map((e) => [e.id, e.nombre]));
     decPorMes = last6.map((m) => {
       const obj: { mes: string; total: number; [k: string]: string | number } = {
         mes: formatMesLabel(m),
         total: 0,
       };
-      estList.forEach((est) => {
+      activeEstsIds.forEach((estId) => {
+        const estName = estNamesMap.get(estId) || "Unknown";
         const cnt = dec.filter((r) => {
           const d = r.dia ? r.dia.slice(0, 7) : r.created.slice(0, 7);
-          return d === m && r.expand?.establecimiento?.nombre === est;
+          return d === m && r.establecimiento === estId;
         }).length;
-        obj[est] = cnt;
+        obj[estName] = cnt;
         obj.total += cnt;
       });
       return obj;
@@ -130,7 +125,7 @@ function computeDashboardData(
       conductasFrecuentes: computeConductas(dec),
       consecuentesFrecuentes: computeConsecuentes(dec),
       ultimosDec: computeUltimosDec(dec),
-      establecimientos,
+      establecimientos: allEsts,
     };
   }
   decPorMes = last6.map((m) => ({
@@ -155,11 +150,11 @@ function computeDashboardData(
     conductasFrecuentes: computeConductas(dec),
     consecuentesFrecuentes: computeConsecuentes(dec),
     ultimosDec: computeUltimosDec(dec),
-    establecimientos,
+    establecimientos: allEsts,
   };
 }
 
-function computeProtocolosPorTipo(proto: any[]) {
+function computeProtocolosPorTipo(proto: ProtocolRecord[]) {
   const map: Record<string, number> = {};
   proto.forEach((r) => {
     const nombre =
@@ -169,7 +164,7 @@ function computeProtocolosPorTipo(proto: any[]) {
   return Object.entries(map).map(([nombre, total]) => ({ nombre, total }));
 }
 
-function computeConductas(dec: any[]) {
+function computeConductas(dec: DecRecord[]) {
   const map: Record<string, number> = {};
   dec.forEach((r) => {
     const arr: string[] = Array.isArray(r.conductas) ? r.conductas : [];
@@ -180,7 +175,7 @@ function computeConductas(dec: any[]) {
   return Object.entries(map).map(([nombre, total]) => ({ nombre, total }));
 }
 
-function computeConsecuentes(dec: any[]) {
+function computeConsecuentes(dec: DecRecord[]) {
   const map: Record<string, number> = {};
   dec.forEach((r) => {
     const arr: string[] = Array.isArray(r.consecuentes) ? r.consecuentes : [];
@@ -191,7 +186,7 @@ function computeConsecuentes(dec: any[]) {
   return Object.entries(map).map(([nombre, total]) => ({ nombre, total }));
 }
 
-function computeUltimosDec(dec: any[]) {
+function computeUltimosDec(dec: DecRecord[]) {
   return [...dec]
     .sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime())
     .slice(0, 10)
@@ -209,22 +204,31 @@ export function DashboardContent() {
   const user = useUser();
   const isAdmin = user?.role?.toLowerCase() === "admin";
 
-  const [decRecords, setDecRecords] = useState<any[]>([]);
-  const [protocolRecords, setProtocolRecords] = useState<any[]>([]);
+  const [decRecords, setDecRecords] = useState<DecRecord[]>([]);
+  const [protocolRecords, setProtocolRecords] = useState<ProtocolRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtroEst, setFiltroEst] = useState<string>("global");
+  const [allEsts, setAllEsts] = useState<EstablecimientoRecord[]>([]);
+  const [userEsts, setUserEsts] = useState<EstablecimientoRecord[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     if (!user) return;
+    refreshKey; // used as trigger
     let cancelled = false;
     setLoading(true);
 
     const fetchAll = async () => {
       try {
-        const filter = !isAdmin && user.establecimiento ? `establecimiento = "${user.establecimiento}"` : "";
+        let filter = "";
+        if (!isAdmin && user.establecimiento) {
+          const ests = Array.isArray(user.establecimiento) ? user.establecimiento : [user.establecimiento];
+          if (ests.length > 0) {
+            filter = ests.map((id: string) => `establecimiento = "${id}"`).join(" || ");
+          }
+        }
 
-        const [dec, proto] = await Promise.all([
+        const [dec, proto, estsList] = await Promise.all([
           pb.collection("dec").getFullList({
             sort: "-created",
             expand: "establecimiento",
@@ -235,14 +239,28 @@ export function DashboardContent() {
             expand: "protocolo,establecimiento",
             ...(filter ? { filter } : {}),
           }),
+          pb.collection("establecimientos").getFullList({
+            sort: "nombre",
+          }),
         ]);
 
         if (!cancelled) {
-          setDecRecords(dec as any[]);
-          setProtocolRecords(proto as any[]);
+          setDecRecords(dec as unknown as DecRecord[]);
+          setProtocolRecords(proto as unknown as ProtocolRecord[]);
+          const all = estsList as unknown as EstablecimientoRecord[];
+          setAllEsts(all);
+
+          if (isAdmin) {
+            setUserEsts(all);
+          } else if (user.establecimiento) {
+            const ids = Array.isArray(user.establecimiento) ? user.establecimiento : [user.establecimiento];
+            setUserEsts(all.filter((e) => ids.includes(e.id)));
+          }
         }
-      } catch (e: any) {
-        if (!e.isAbort) console.error("Dashboard fetch error:", e);
+      } catch (e: unknown) {
+        if (e && typeof e === "object" && "isAbort" in e && !e.isAbort) {
+          console.error("Dashboard fetch error:", e);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -252,27 +270,32 @@ export function DashboardContent() {
     return () => {
       cancelled = true;
     };
-  }, [user, refreshKey]);
+  }, [user, refreshKey, isAdmin]);
 
   const dashData = useMemo(() => {
     if (loading) return null;
-    return computeDashboardData(decRecords, protocolRecords, filtroEst === "global" ? null : filtroEst, isAdmin);
-  }, [decRecords, protocolRecords, filtroEst, isAdmin, loading]);
+    return computeDashboardData(
+      decRecords,
+      protocolRecords,
+      filtroEst === "global" ? null : filtroEst,
+      isAdmin,
+      allEsts,
+    );
+  }, [decRecords, protocolRecords, filtroEst, isAdmin, loading, allEsts]);
 
-  const establecimientos = dashData?.establecimientos ?? [];
   const isGlobal = filtroEst === "global";
 
   if (loading || !dashData) {
     return (
       <div className="space-y-6">
-        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-32 rounded-xl bg-muted/50 animate-pulse" />
+            <div key={i} className="h-32 animate-pulse rounded-xl bg-muted/50" />
           ))}
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           {[1, 2].map((i) => (
-            <div key={i} className="h-72 rounded-xl bg-muted/50 animate-pulse" />
+            <div key={i} className="h-72 animate-pulse rounded-xl bg-muted/50" />
           ))}
         </div>
       </div>
@@ -282,26 +305,30 @@ export function DashboardContent() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Panel de Control</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {isAdmin ? "Vista general de todos los establecimientos" : "Estadísticas de tu establecimiento"}
+          <h1 className="font-bold text-2xl tracking-tight">Panel de Control</h1>
+          <p className="mt-0.5 text-muted-foreground text-sm">
+            {filtroEst === "global"
+              ? isAdmin
+                ? "Vista general de todos los establecimientos"
+                : "Estadísticas globales de tus establecimientos"
+              : `Estadísticas de ${userEsts.find((e) => e.id === filtroEst)?.nombre || "tu establecimiento"}`}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {isAdmin && establecimientos.length > 0 && (
-            <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-1.5">
-              <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+          {userEsts.length > 1 && (
+            <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5">
+              <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
               <Select value={filtroEst} onValueChange={setFiltroEst}>
-                <SelectTrigger className="border-0 bg-transparent shadow-none h-auto p-0 text-sm font-medium w-[200px] focus:ring-0">
+                <SelectTrigger className="h-auto w-[200px] border-0 bg-transparent p-0 font-medium text-sm shadow-none focus:ring-0">
                   <SelectValue placeholder="Seleccionar establecimiento" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="global">🌐 Vista Global</SelectItem>
-                  {establecimientos.map((est) => (
-                    <SelectItem key={est} value={est}>
-                      {est}
+                  {userEsts.map((est) => (
+                    <SelectItem key={est.id} value={est.id}>
+                      {est.nombre}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -323,7 +350,13 @@ export function DashboardContent() {
         <ChartDecTendencia
           data={dashData.decPorMes}
           isAdmin={isAdmin && isGlobal}
-          establecimientos={isAdmin && isGlobal ? establecimientos.slice(0, 5) : undefined}
+          establecimientos={
+            isAdmin && isGlobal
+              ? dashData.decPorMes.length > 0
+                ? Object.keys(dashData.decPorMes[0]).filter((k) => k !== "mes" && k !== "total")
+                : []
+              : undefined
+          }
         />
         <ChartProtocolosBar data={dashData.protocolosPorTipo} />
       </div>

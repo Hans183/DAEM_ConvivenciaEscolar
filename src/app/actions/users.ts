@@ -1,11 +1,17 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import PocketBase, { ClientResponseError } from "pocketbase";
 
 // Initialize a server-side PocketBase instance using environment variables
 function getAdminPb() {
   const url = process.env.NEXT_PUBLIC_POCKETBASE_URL ?? "https://apiconvivencia.daemlu.cl";
-  return new PocketBase(url);
+  const pb = new PocketBase(url);
+  pb.beforeSend = (url, options) => {
+    options.cache = "no-store";
+    return { url, options };
+  };
+  return pb;
 }
 
 export interface CreateUserPayload {
@@ -115,6 +121,8 @@ export async function createUserAction(payload: CreateUserPayload): Promise<Acti
       verified: true,
     });
 
+    revalidatePath("/dashboard/users");
+
     return { success: true };
   } catch (error) {
     let detail = "An unknown error occurred";
@@ -148,6 +156,8 @@ export async function updateUserAction(id: string, payload: UpdateUserPayload): 
 
     await pb.collection("users").update(id, payload);
 
+    revalidatePath("/dashboard/users");
+
     return { success: true };
   } catch (error) {
     let detail = "An unknown error occurred";
@@ -179,6 +189,9 @@ export async function deleteUserAction(id: string): Promise<ActionResult> {
   try {
     await pb.admins.authWithPassword(adminEmail, adminPassword);
     await pb.collection("users").delete(id);
+
+    revalidatePath("/dashboard/users");
+
     return { success: true };
   } catch (error) {
     let detail = "An unknown error occurred";
