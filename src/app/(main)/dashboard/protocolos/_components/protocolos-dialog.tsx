@@ -65,8 +65,10 @@ export function ProtocoloDialog({
 
   useEffect(() => {
     if (open) {
-      // Always fetch establecimientos so the user's establishment name can be shown
-      pb.collection("establecimientos").getFullList({ sort: "nombre" }).then(setEstablecimientos).catch(console.error);
+      pb.collection("establecimientos")
+        .getFullList({ sort: "nombre" })
+        .then((records) => setEstablecimientos(records as unknown as { id: string; nombre: string }[]))
+        .catch(console.error);
     }
   }, [open]);
 

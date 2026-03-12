@@ -1318,7 +1318,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
 
                     {/* Resumen de Errores */}
                     {Object.keys(form.formState.errors).length > 0 && (
-                      <div className="rounded-lg border border-red-200 bg-red-50 p-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="fade-in slide-in-from-top-2 animate-in rounded-lg border border-red-200 bg-red-50 p-4 duration-300">
                         <h4 className="flex items-center font-semibold text-red-800 text-sm">
                           <X className="mr-2 h-4 w-4" />
                           Se requiere completar los siguientes campos:
