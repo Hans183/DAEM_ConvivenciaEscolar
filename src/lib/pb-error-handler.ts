@@ -24,10 +24,11 @@ export function getFriendlyErrorMessage(error: unknown): string {
 
       // Extract the first error message found in the data object
       for (const [field, details] of Object.entries(data)) {
-        if (details && typeof details === "object" && details.code) {
+        if (details && typeof details === "object" && "code" in details) {
+          const errorDetail = details as { code: string; message?: string };
           const friendlyField = fieldNames[field] || field;
 
-          switch (details.code) {
+          switch (errorDetail.code) {
             case "validation_not_unique":
               return `${friendlyField} ya está en uso.`;
             case "validation_required":
@@ -44,8 +45,8 @@ export function getFriendlyErrorMessage(error: unknown): string {
               return `El valor de ${friendlyField} no es válido.`;
           }
 
-          if (details.message) {
-            return `${friendlyField}: ${translateTechnicalTerms(details.message)}`;
+          if (errorDetail.message) {
+            return `${friendlyField}: ${translateTechnicalTerms(errorDetail.message)}`;
           }
         }
       }
