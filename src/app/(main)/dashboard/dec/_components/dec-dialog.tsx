@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useRef, useState } from "react";
 
@@ -17,9 +17,10 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { getFriendlyErrorMessage } from "@/lib/pb-error-handler";
 import { pb } from "@/lib/pocketbase";
-import { cn } from "@/lib/utils";
 import { formatRut, validateRut } from "@/lib/rut-utils";
+import { cn } from "@/lib/utils";
 
 import type { DecRecord } from "./columns";
 
@@ -396,17 +397,11 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
       onSuccess();
       onOpenChange(false);
     } catch (err: unknown) {
-      const error = err as { message?: string; response?: { data?: unknown } };
-      console.error("Full error object:", error);
-      console.error("Response data:", error.response?.data);
-
-      let errorMessage = error.message || "Por favor verifica los datos ingresados.";
-      if (error.response?.data) {
-        errorMessage = `Error PB: ${JSON.stringify(error.response.data)}`;
-      }
+      console.error("Error processing DEC record:", err);
+      const message = getFriendlyErrorMessage(err);
 
       toast.error(record ? "Error al actualizar registro" : "Error al crear registro", {
-        description: errorMessage,
+        description: message,
       });
     } finally {
       setLoading(false);
@@ -1159,7 +1154,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                               <FormItem className="col-span-2">
                                 <FormLabel>Descripción Adicional</FormLabel>
                                 <FormControl>
-                                  <Textarea {...field} />
+                                  <Textarea className="min-h-[200px]" {...field} />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>

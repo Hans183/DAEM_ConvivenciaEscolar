@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
+import { getFriendlyErrorMessage } from "@/lib/pb-error-handler";
 
 import { getColumns } from "./columns";
 import { UserDialog } from "./user-dialog";
@@ -42,7 +43,8 @@ export function UsersTable() {
       setData(result.data);
     } catch (error) {
       console.error("Failed to fetch users:", error);
-      toast.error("Error al obtener usuarios");
+      const message = getFriendlyErrorMessage(error);
+      toast.error("Error al obtener usuarios", { description: message });
     } finally {
       setLoading(false);
     }
@@ -76,7 +78,8 @@ export function UsersTable() {
       fetchUsers();
     } catch (error) {
       console.error(error);
-      toast.error("Error al eliminar usuario");
+      const message = getFriendlyErrorMessage(error);
+      toast.error("Error al eliminar usuario", { description: message });
     } finally {
       setDeleteDialogOpen(false);
       setUserToDelete(null);

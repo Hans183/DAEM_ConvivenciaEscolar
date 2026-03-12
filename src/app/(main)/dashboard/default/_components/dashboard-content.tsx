@@ -3,10 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { Building2, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUser } from "@/hooks/use-user";
+import { getFriendlyErrorMessage } from "@/lib/pb-error-handler";
 import { pb } from "@/lib/pocketbase";
 
 import { ChartConductasPie } from "./chart-conductas-pie";
@@ -260,6 +262,8 @@ export function DashboardContent() {
       } catch (e: unknown) {
         if (e && typeof e === "object" && "isAbort" in e && !e.isAbort) {
           console.error("Dashboard fetch error:", e);
+          const message = getFriendlyErrorMessage(e);
+          toast.error("Error al cargar datos del panel", { description: message });
         }
       } finally {
         if (!cancelled) setLoading(false);

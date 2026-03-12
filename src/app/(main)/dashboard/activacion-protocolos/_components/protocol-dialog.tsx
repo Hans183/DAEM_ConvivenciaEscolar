@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUser } from "@/hooks/use-user";
+import { getFriendlyErrorMessage } from "@/lib/pb-error-handler";
 import { pb } from "@/lib/pocketbase";
 import { cn } from "@/lib/utils";
 
@@ -124,7 +125,7 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
       setFetchingProtocols(true);
       try {
         const records = await pb.collection("protocolos").getFullList({
-          filter: `establecimiento = "${selectedEst}"`,
+          filter: `establecimiento = "${selectedEst}" || es_comunal = true`,
           sort: "nombre",
         });
         setProtocols(records as unknown as Protocol[]);
@@ -210,7 +211,7 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
       onOpenChange(false);
     } catch (error) {
       console.error(error);
-      const message = error instanceof Error ? error.message : "Por favor verifica los datos ingresados.";
+      const message = getFriendlyErrorMessage(error);
       toast.error(protocol ? "Error al actualizar registro" : "Error al crear registro", {
         description: message,
       });
@@ -318,9 +319,9 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
                         <CommandInput placeholder="Buscar protocolo..." />
                         <CommandList onWheel={(e) => e.stopPropagation()}>
                           {fetchingProtocols ? (
-                            <div className="p-4 text-center text-sm text-muted-foreground">Cargando...</div>
+                            <div className="p-4 text-center text-muted-foreground text-sm">Cargando...</div>
                           ) : protocols.length === 0 ? (
-                            <div className="p-4 text-center text-sm text-yellow-600 font-medium">
+                            <div className="p-4 text-center font-medium text-sm text-yellow-600">
                               Este establecimiento no tiene protocolos definidos.
                             </div>
                           ) : (
@@ -356,7 +357,7 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
                     </PopoverContent>
                   </Popover>
                   {protocols.length === 0 && selectedEst && !fetchingProtocols && (
-                    <p className="text-[0.8rem] font-medium text-yellow-600 mt-1">
+                    <p className="mt-1 font-medium text-[0.8rem] text-yellow-600">
                       ⚠️ Atención: No hay protocolos configurados para este establecimiento.
                     </p>
                   )}

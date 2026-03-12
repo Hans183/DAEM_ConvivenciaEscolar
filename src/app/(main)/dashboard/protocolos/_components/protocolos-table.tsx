@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 import { useUser } from "@/hooks/use-user";
+import { getFriendlyErrorMessage } from "@/lib/pb-error-handler";
 import { pb } from "@/lib/pocketbase";
 
 import { getColumns, type ProtocoloRecord } from "./protocolos-columns";
@@ -25,37 +26,12 @@ export function ProtocolosTable() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedProtocolo, setSelectedProtocolo] = useState<ProtocoloRecord | null>(null);
 
-  const handleCreate = () => {
-    setSelectedProtocolo(null);
-    setDialogOpen(true);
-  };
-
-  const handleEdit = (record: ProtocoloRecord) => {
-    setSelectedProtocolo(record);
-    setDialogOpen(true);
-  };
-
-  const handleDelete = async (record: ProtocoloRecord) => {
-    if (!window.confirm("¿Está seguro de eliminar este protocolo?")) return;
-    setLoading(true);
-    try {
-      await pb.collection("protocolos").delete(record.id);
-      toast.success("Protocolo eliminado");
-      fetchData();
-    } catch (error) {
-      console.error("Error deleting protocolo:", error);
-      toast.error("Error al eliminar protocolo");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!user) return; // Wait until user is loaded
     setLoading(true);
     try {
-      // If the user is not an Admin, filter by their establecimiento
-      const filter = !isAdmin && user.establecimiento ? `establecimiento = "${user.establecimiento}"` : "";
+      // If the user is not an Admin, filter by their establecimiento OR communal protocols
+      const filter = !isAdmin && user.establecimiento ? `(establecimiento = "${user.establecimiento}" || es_comunal = true)` : "";
 
       const records = await pb.collection("protocolos").getFullList({
         sort: "-created",
@@ -64,27 +40,55 @@ export function ProtocolosTable() {
       });
 
       setData(records as unknown as ProtocoloRecord[]);
-    } catch (error: any) {
-      if (error.isAbort) return;
+    } catch (error) {
+      if ((error as any).isAbort) return;
       console.error("Failed to fetch protocolos:", error);
-      toast.error("Error al cargar protocolos");
+      const message = getFriendlyErrorMessage(error);
+      toast.error("Error al cargar protocolos", { description: message });
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, isAdmin]);
+
+  const handleCreate = useCallback(() => {
+    setSelectedProtocolo(null);
+    setDialogOpen(true);
+  }, []);
+
+  const handleEdit = useCallback((record: ProtocoloRecord) => {
+    setSelectedProtocolo(record);
+    setDialogOpen(true);
+  }, []);
+
+  const handleDelete = useCallback(
+    async (record: ProtocoloRecord) => {
+      if (!window.confirm("¿Está seguro de eliminar este protocolo?")) return;
+      setLoading(true);
+      try {
+        await pb.collection("protocolos").delete(record.id);
+        toast.success("Protocolo eliminado");
+        fetchData();
+      } catch (error) {
+        console.error("Error deleting protocolo:", error);
+        const message = getFriendlyErrorMessage(error);
+        toast.error("Error al eliminar protocolo", { description: message });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [fetchData],
+  );
 
   // Re-fetch when user loads
   useEffect(() => {
     if (user !== null) {
       fetchData();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, fetchData]);
 
   const columns = useMemo(
     () => getColumns({ onEdit: handleEdit, onDelete: handleDelete, isAdmin }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [isAdmin],
+    [isAdmin, handleEdit, handleDelete],
   );
 
   const table = useDataTableInstance({

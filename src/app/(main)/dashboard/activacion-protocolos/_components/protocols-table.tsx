@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Plus } from "lucide-react";
-import { ClientResponseError } from "pocketbase";
 import { toast } from "sonner";
 
 import { DataTable } from "@/components/data-table/data-table";
@@ -11,6 +10,7 @@ import { DataTablePagination } from "@/components/data-table/data-table-paginati
 import { Button } from "@/components/ui/button";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 import { useUser } from "@/hooks/use-user";
+import { getFriendlyErrorMessage } from "@/lib/pb-error-handler";
 import { pb } from "@/lib/pocketbase";
 
 import { getColumns, type ProtocolActivation } from "./columns";
@@ -48,9 +48,8 @@ export function ProtocolsTable() {
       });
       setData(records as unknown as ProtocolActivation[]);
     } catch (error) {
-      if (error instanceof ClientResponseError && error.isAbort) return;
-      console.error("Failed to fetch protocol activations:", error);
-      toast.error("Error al cargar activaciones de protocolos");
+      const message = getFriendlyErrorMessage(error);
+      toast.error("Error al cargar activaciones de protocolos", { description: message });
     } finally {
       setLoading(false);
     }
@@ -75,8 +74,8 @@ export function ProtocolsTable() {
         toast.success("Registro eliminado");
         fetchData();
       } catch (error) {
-        console.error("Error deleting:", error);
-        toast.error("Error al eliminar registro");
+        const message = getFriendlyErrorMessage(error);
+        toast.error("Error al eliminar registro", { description: message });
       } finally {
         setLoading(false);
       }

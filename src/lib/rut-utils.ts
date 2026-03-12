@@ -26,10 +26,7 @@ export const validateRut = (rut: string): boolean => {
   }
 
   const expectedDvNum = 11 - (sum % 11);
-  const expectedDv = 
-    expectedDvNum === 11 ? "0" : 
-    expectedDvNum === 10 ? "K" : 
-    expectedDvNum.toString();
+  const expectedDv = expectedDvNum === 11 ? "0" : expectedDvNum === 10 ? "K" : expectedDvNum.toString();
 
   return expectedDv === dv;
 };
@@ -41,7 +38,7 @@ export const formatRut = (value: string): string => {
   // Limpiar caracteres no permitidos y quitar ceros iniciales
   const cleanValue = value.replace(/[^0-9kK]/g, "");
   if (cleanValue.length === 0) return "";
-  
+
   // Quitar ceros a la izquierda del cuerpo (pero no si es solo "0")
   let actualValue = cleanValue;
   if (actualValue.length > 1 && actualValue.startsWith("0")) {

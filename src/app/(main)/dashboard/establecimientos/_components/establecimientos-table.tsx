@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ import { DataTablePagination } from "@/components/data-table/data-table-paginati
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
+import { getFriendlyErrorMessage } from "@/lib/pb-error-handler";
 import { pb } from "@/lib/pocketbase";
 
 import { type EstablecimientoActivation, getColumns } from "./establecimientos-columns";
@@ -20,32 +21,7 @@ export function EstablecimientosTable() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedEstablecimiento, setSelectedEstablecimiento] = useState<EstablecimientoActivation | null>(null);
-  const handleCreate = () => {
-    setSelectedEstablecimiento(null);
-    setDialogOpen(true);
-  };
-
-  const handleEdit = (record: EstablecimientoActivation) => {
-    setSelectedEstablecimiento(record);
-    setDialogOpen(true);
-  };
-
-  const handleDelete = async (record: EstablecimientoActivation) => {
-    if (!window.confirm("¿Está seguro de eliminar este establecimiento?")) return;
-    setLoading(true);
-    try {
-      await pb.collection("establecimientos").delete(record.id);
-      toast.success("Establecimiento eliminado");
-      fetchData();
-    } catch (error) {
-      console.error("Error deleting establecimiento:", error);
-      toast.error("Error al eliminar establecimiento");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const records = await pb.collection("establecimientos").getFullList({
@@ -56,15 +32,45 @@ export function EstablecimientosTable() {
     } catch (error: any) {
       if (error.isAbort) return;
       console.error("Failed to fetch establecimientos:", error);
-      toast.error("Error al cargar establecimientos");
+      const message = getFriendlyErrorMessage(error);
+      toast.error("Error al cargar establecimientos", { description: message });
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  const handleCreate = useCallback(() => {
+    setSelectedEstablecimiento(null);
+    setDialogOpen(true);
+  }, []);
+
+  const handleEdit = useCallback((record: EstablecimientoActivation) => {
+    setSelectedEstablecimiento(record);
+    setDialogOpen(true);
+  }, []);
+
+  const handleDelete = useCallback(
+    async (record: EstablecimientoActivation) => {
+      if (!window.confirm("¿Está seguro de eliminar este establecimiento?")) return;
+      setLoading(true);
+      try {
+        await pb.collection("establecimientos").delete(record.id);
+        toast.success("Establecimiento eliminado");
+        fetchData();
+      } catch (error) {
+        console.error("Error deleting establecimiento:", error);
+        const message = getFriendlyErrorMessage(error);
+        toast.error("Error al eliminar establecimiento", { description: message });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [fetchData],
+  );
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   const columns = getColumns({ onEdit: handleEdit, onDelete: handleDelete });
 

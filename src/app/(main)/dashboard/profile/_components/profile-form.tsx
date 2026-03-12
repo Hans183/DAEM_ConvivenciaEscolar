@@ -10,6 +10,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { getFriendlyErrorMessage } from "@/lib/pb-error-handler";
 import { pb } from "@/lib/pocketbase";
 
 // Schema similar to user-dialog but without 'role'
@@ -45,6 +46,13 @@ const profileFormSchema = z
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
+interface UpdateProfilePayload {
+  name: string;
+  email: string;
+  password?: string;
+  passwordConfirm?: string;
+}
+
 export function ProfileForm() {
   const [loading, setLoading] = useState(false);
   // userId will be fetched from authStore
@@ -69,13 +77,13 @@ export function ProfileForm() {
         passwordConfirm: "",
       });
     }
-  }, [user?.id, user?.updated, form]);
+  }, [user, form]);
 
   const onSubmit = async (data: ProfileFormValues) => {
     if (!user) return;
     setLoading(true);
     try {
-      const payload: any = {
+      const payload: UpdateProfilePayload = {
         name: data.name,
         email: data.email,
       };
@@ -97,10 +105,11 @@ export function ProfileForm() {
       // Optional: reset password fields
       form.setValue("password", "");
       form.setValue("passwordConfirm", "");
-    } catch (error: any) {
+    } catch (error) {
       console.error(error);
+      const message = getFriendlyErrorMessage(error);
       toast.error("Error al actualizar perfil", {
-        description: error.message || "Por favor verifica los datos ingresados.",
+        description: message,
       });
     } finally {
       setLoading(false);
@@ -109,7 +118,7 @@ export function ProfileForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-2xl">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="max-w-2xl space-y-6">
         <FormField
           control={form.control}
           name="name"

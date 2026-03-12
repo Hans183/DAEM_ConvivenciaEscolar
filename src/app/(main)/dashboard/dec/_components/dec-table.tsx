@@ -12,6 +12,7 @@ import { DataTablePagination } from "@/components/data-table/data-table-paginati
 import { Button } from "@/components/ui/button";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 import { useUser } from "@/hooks/use-user";
+import { getFriendlyErrorMessage } from "@/lib/pb-error-handler";
 import { pb } from "@/lib/pocketbase";
 
 import { type DecRecord, getColumns } from "./columns";
@@ -55,10 +56,9 @@ export function DecTable() {
       });
       setData(records as unknown as DecRecord[]);
     } catch (err: unknown) {
-      const error = err as { isAbort?: boolean };
-      if (error.isAbort) return;
-      console.error("Failed to fetch DEC records:", error);
-      toast.error("Error al cargar registros DEC");
+      const message = getFriendlyErrorMessage(err);
+      console.error("Failed to fetch DEC records:", err);
+      toast.error("Error al cargar registros DEC", { description: message });
     } finally {
       setLoading(false);
     }
@@ -83,9 +83,9 @@ export function DecTable() {
         toast.success("Registro eliminado correctamente");
         fetchData();
       } catch (err: unknown) {
-        const error = err as { isAbort?: boolean };
-        console.error("Failed to delete DEC record:", error);
-        toast.error("Error al eliminar el registro");
+        const message = getFriendlyErrorMessage(err);
+        console.error("Failed to delete DEC record:", err);
+        toast.error("Error al eliminar el registro", { description: message });
       }
     },
     [fetchData],

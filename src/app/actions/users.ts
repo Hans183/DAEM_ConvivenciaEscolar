@@ -1,7 +1,10 @@
 "use server";
+// biome-ignore assist/source/organizeImports: <by happy>
+import PocketBase from "pocketbase";
 
 import { revalidatePath } from "next/cache";
-import PocketBase, { ClientResponseError } from "pocketbase";
+
+import { getFriendlyErrorMessage } from "@/lib/pb-error-handler";
 
 // Initialize a server-side PocketBase instance using environment variables
 function getAdminPb() {
@@ -86,15 +89,7 @@ export async function getUsersAction(): Promise<GetUsersResult> {
 
     return { success: true, data: records as unknown as UserRecord[] };
   } catch (error) {
-    let detail = "An unknown error occurred";
-    if (error instanceof ClientResponseError) {
-      detail = error.response?.data ? JSON.stringify(error.response.data) : error.message;
-    } else if (error instanceof Error) {
-      detail = error.message;
-    } else {
-      detail = String(error);
-    }
-    return { success: false, error: detail };
+    return { success: false, error: getFriendlyErrorMessage(error) };
   }
 }
 
@@ -125,15 +120,7 @@ export async function createUserAction(payload: CreateUserPayload): Promise<Acti
 
     return { success: true };
   } catch (error) {
-    let detail = "An unknown error occurred";
-    if (error instanceof ClientResponseError) {
-      detail = error.response?.data ? JSON.stringify(error.response.data) : error.message;
-    } else if (error instanceof Error) {
-      detail = error.message;
-    } else {
-      detail = String(error);
-    }
-    return { success: false, error: detail };
+    return { success: false, error: getFriendlyErrorMessage(error) };
   }
 }
 
@@ -160,15 +147,7 @@ export async function updateUserAction(id: string, payload: UpdateUserPayload): 
 
     return { success: true };
   } catch (error) {
-    let detail = "An unknown error occurred";
-    if (error instanceof ClientResponseError) {
-      detail = error.response?.data ? JSON.stringify(error.response.data) : error.message;
-    } else if (error instanceof Error) {
-      detail = error.message;
-    } else {
-      detail = String(error);
-    }
-    return { success: false, error: detail };
+    return { success: false, error: getFriendlyErrorMessage(error) };
   }
 }
 
@@ -194,14 +173,6 @@ export async function deleteUserAction(id: string): Promise<ActionResult> {
 
     return { success: true };
   } catch (error) {
-    let detail = "An unknown error occurred";
-    if (error instanceof ClientResponseError) {
-      detail = error.response?.data ? JSON.stringify(error.response.data) : error.message;
-    } else if (error instanceof Error) {
-      detail = error.message;
-    } else {
-      detail = String(error);
-    }
-    return { success: false, error: detail };
+    return { success: false, error: getFriendlyErrorMessage(error) };
   }
 }

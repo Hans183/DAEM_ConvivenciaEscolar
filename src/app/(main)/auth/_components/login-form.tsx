@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { getFriendlyErrorMessage } from "@/lib/pb-error-handler";
 
 const FormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -38,8 +39,9 @@ export function LoginForm() {
       // Redirect to dashboard
       window.location.href = "/dashboard";
     } catch (error) {
-      toast.error("Failed to login", {
-        description: "Please check your credentials and try again.",
+      const message = getFriendlyErrorMessage(error);
+      toast.error("Error al iniciar sesión", {
+        description: message || "Por favor verifica tus credenciales e intenta de nuevo.",
       });
       console.error(error);
     }

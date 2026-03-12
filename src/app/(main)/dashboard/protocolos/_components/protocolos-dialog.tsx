@@ -18,10 +18,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { getFriendlyErrorMessage } from "@/lib/pb-error-handler";
 import { pb } from "@/lib/pocketbase";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +37,7 @@ const protocoloFormSchema = z.object({
     message: "La descripción es obligatoria.",
   }),
   establecimiento: z.string().optional(),
+  es_comunal: z.boolean().default(false),
 });
 
 type ProtocoloFormValues = z.infer<typeof protocoloFormSchema>;
@@ -57,7 +60,7 @@ export function ProtocoloDialog({
   userEstablecimiento,
 }: ProtocoloDialogProps) {
   const [loading, setLoading] = useState(false);
-  const [establecimientos, setEstablecimientos] = useState<any[]>([]);
+  const [establecimientos, setEstablecimientos] = useState<{ id: string; nombre: string }[]>([]);
   const [popoverOpen, setPopoverOpen] = useState(false);
 
   useEffect(() => {
@@ -73,6 +76,7 @@ export function ProtocoloDialog({
       nombre: "",
       descripcion: "",
       establecimiento: "",
+      es_comunal: false,
     },
   });
 
@@ -82,12 +86,14 @@ export function ProtocoloDialog({
         nombre: protocolo.nombre,
         descripcion: protocolo.descripcion,
         establecimiento: protocolo.establecimiento || "",
+        es_comunal: protocolo.es_comunal ?? false,
       });
     } else {
       form.reset({
         nombre: "",
         descripcion: "",
         establecimiento: isAdmin ? "" : (userEstablecimiento ?? ""),
+        es_comunal: false,
       });
     }
   }, [protocolo, form, isAdmin, userEstablecimiento]);
@@ -98,7 +104,8 @@ export function ProtocoloDialog({
       const payload = {
         nombre: data.nombre,
         descripcion: data.descripcion,
-        establecimiento: isAdmin ? data.establecimiento || null : userEstablecimiento || null,
+        es_comunal: isAdmin ? data.es_comunal : false,
+        establecimiento: (isAdmin ? data.es_comunal : false) ? null : (isAdmin ? data.establecimiento || null : userEstablecimiento || null),
       };
 
       if (protocolo) {
@@ -111,10 +118,11 @@ export function ProtocoloDialog({
 
       onSuccess();
       onOpenChange(false);
-    } catch (error: any) {
+    } catch (error) {
       console.error(error);
+      const message = getFriendlyErrorMessage(error);
       toast.error(protocolo ? "Error al actualizar protocolo" : "Error al crear protocolo", {
-        description: error.message || "Por favor verifica los datos ingresados.",
+        description: message,
       });
     } finally {
       setLoading(false);
@@ -167,8 +175,32 @@ export function ProtocoloDialog({
               )}
             />
 
+            {/* Es Comunal (Solo Admin) */}
+            {isAdmin && (
+              <FormField
+                control={form.control}
+                name="es_comunal"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Protocolo Comunal</FormLabel>
+                      <FormDescription>
+                        Si se activa, este protocolo será visible para todos los establecimientos.
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            )}
+
             {/* Establecimiento */}
-            {isAdmin ? (
+            {isAdmin ? !form.watch("es_comunal") && (
               <FormField
                 control={form.control}
                 name="establecimiento"

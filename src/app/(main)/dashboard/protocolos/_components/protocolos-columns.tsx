@@ -20,6 +20,7 @@ export type ProtocoloRecord = {
   nombre: string;
   descripcion: string;
   establecimiento: string;
+  es_comunal: boolean;
   expand?: {
     establecimiento?: { id: string; nombre: string };
   };
@@ -85,9 +86,16 @@ export const getColumns = ({ onEdit, onDelete, isAdmin }: GetColumnsProps): Colu
     id: "establecimiento",
     header: "Establecimiento",
     cell: ({ row }) => {
+      if (row.original.es_comunal) {
+        return <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-primary text-primary-foreground hover:bg-primary/80">Comunal</div>;
+      }
       const nombre = row.original.expand?.establecimiento?.nombre;
       const truncated = nombre && nombre.length > 20 ? `${nombre.slice(0, 20)}…` : nombre;
-      return <div className="text-muted-foreground" title={nombre ?? undefined}>{truncated ?? "—"}</div>;
+      return (
+        <div className="text-muted-foreground" title={nombre ?? undefined}>
+          {truncated ?? "—"}
+        </div>
+      );
     },
   });
 

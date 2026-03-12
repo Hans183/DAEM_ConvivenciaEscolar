@@ -23,6 +23,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getFriendlyErrorMessage } from "@/lib/pb-error-handler";
 import { pb } from "@/lib/pocketbase";
 import { cn } from "@/lib/utils";
 
@@ -180,10 +181,10 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
       onSuccess();
       onOpenChange(false);
     } catch (err: unknown) {
-      const error = err as Error;
-      console.error("Error al guardar usuario:", error);
+      const message = getFriendlyErrorMessage(err);
+      console.error("Error al guardar usuario:", err);
       toast.error(user ? "Error al actualizar usuario" : "Error al crear usuario", {
-        description: error.message || "Por favor verifica los datos ingresados.",
+        description: message,
       });
     } finally {
       setLoading(false);

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { number, z } from "zod";
+import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { getFriendlyErrorMessage } from "@/lib/pb-error-handler";
 import { pb } from "@/lib/pocketbase";
 
 import type { EstablecimientoActivation } from "./establecimientos-columns";
@@ -86,8 +87,9 @@ export function EstablecimientoDialog({ open, onOpenChange, establecimiento, onS
       onOpenChange(false);
     } catch (error: any) {
       console.error(error);
+      const message = getFriendlyErrorMessage(error);
       toast.error(establecimiento ? "Error al actualizar establecimiento" : "Error al crear establecimiento", {
-        description: error.message || "Por favor verifica los datos ingresados.",
+        description: message,
       });
     } finally {
       setLoading(false);
