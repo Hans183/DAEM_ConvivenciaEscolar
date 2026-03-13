@@ -84,7 +84,7 @@ export const getColumns = ({ onEdit, onDelete, isAdmin }: GetColumnsProps): Colu
       accessorKey: "descripcion",
       header: "Descripción",
       cell: ({ row }) => (
-        <div className="text-muted-foreground line-clamp-2 max-w-[400px]">{row.getValue("descripcion")}</div>
+        <div className="line-clamp-2 max-w-[400px] text-muted-foreground">{row.getValue("descripcion")}</div>
       ),
     },
   ];
@@ -95,7 +95,7 @@ export const getColumns = ({ onEdit, onDelete, isAdmin }: GetColumnsProps): Colu
     header: "Establecimiento",
     cell: ({ row }) => {
       if (row.original.es_comunal) {
-        return <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-primary text-primary-foreground hover:bg-primary/80">Comunal</div>;
+        return <div className="inline-flex items-center rounded-full border border-transparent bg-primary px-2.5 py-0.5 font-semibold text-primary-foreground text-xs transition-colors hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">Comunal</div>;
       }
       const nombre = row.original.expand?.establecimiento?.nombre;
       const truncated = nombre && nombre.length > 20 ? `${nombre.slice(0, 20)}…` : nombre;

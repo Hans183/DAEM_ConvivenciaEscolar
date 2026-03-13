@@ -262,8 +262,8 @@ export function ProtocoloDialog({
               />
             ) : (
               <div className="space-y-1">
-                <p className="text-sm font-medium">Establecimiento</p>
-                <p className="flex h-9 w-full items-center rounded-md border border-input bg-muted px-3 py-1 text-sm text-muted-foreground">
+                <p className="font-medium text-sm">Establecimiento</p>
+                <p className="flex h-9 w-full items-center rounded-md border border-input bg-muted px-3 py-1 text-muted-foreground text-sm">
                   {establecimientos.find((e) => e.id === userEstablecimiento)?.nombre ?? "Sin establecimiento asignado"}
                 </p>
               </div>
