@@ -18,6 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { getFriendlyErrorMessage } from "@/lib/pb-error-handler";
+import { hasRole } from "@/lib/roles";
 import { pb } from "@/lib/pocketbase";
 import { formatRut, validateRut } from "@/lib/rut-utils";
 import { cn } from "@/lib/utils";
@@ -225,8 +226,8 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
   // Read from pb.authStore.record (same stable reference as .model, renamed in newer PB versions)
   // We extract only primitive scalars so they can safely be used as effect dependencies.
   const currentUser = pb.authStore.record;
-  const isAdmin = currentUser?.role?.toLowerCase() === "admin";
-  const isItinerante = currentUser?.role?.toLowerCase() === "itinerante";
+  const isAdmin = hasRole(currentUser?.role, "admin");
+  const isItinerante = hasRole(currentUser?.role, "itinerante");
   const hasGlobalAccess = isAdmin || isItinerante;
   // Serialize establecimiento to a stable string for dep-array comparisons
   const establecimientoKey = JSON.stringify(currentUser?.establecimiento ?? null);

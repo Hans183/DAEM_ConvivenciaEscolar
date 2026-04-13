@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUser } from "@/hooks/use-user";
+import { hasRole } from "@/lib/roles";
 import { getFriendlyErrorMessage } from "@/lib/pb-error-handler";
 import { pb } from "@/lib/pocketbase";
 
@@ -204,7 +205,7 @@ function computeUltimosDec(dec: DecRecord[]) {
 
 export function DashboardContent() {
   const user = useUser();
-  const isAdmin = user?.role?.toLowerCase() === "admin";
+  const isAdmin = hasRole(user?.role, "admin");
 
   const [decRecords, setDecRecords] = useState<DecRecord[]>([]);
   const [protocolRecords, setProtocolRecords] = useState<ProtocolRecord[]>([]);

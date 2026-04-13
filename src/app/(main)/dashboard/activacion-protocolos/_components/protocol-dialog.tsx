@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUser } from "@/hooks/use-user";
+import { hasRole } from "@/lib/roles";
 import { getFriendlyErrorMessage } from "@/lib/pb-error-handler";
 import { pb } from "@/lib/pocketbase";
 import { cn } from "@/lib/utils";
@@ -84,7 +85,7 @@ type Establecimiento = {
 export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: ProtocolDialogProps) {
   // useUser() reads auth state safely client-side only (avoids hydration mismatch)
   const user = useUser();
-  const isAdmin = user?.role?.toLowerCase() === "admin";
+  const isAdmin = hasRole(user?.role, "admin");
 
   const assignedEstsIds = useMemo(() => {
     if (!user?.establecimiento) return [];

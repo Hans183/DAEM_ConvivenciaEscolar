@@ -1,4 +1,4 @@
-import { FileText, LayoutDashboard, type LucideIcon, School, Users } from "lucide-react";
+import { FileText, LayoutDashboard, type LucideIcon, School, Users, Shield } from "lucide-react";
 
 export interface NavSubItem {
   title: string;
@@ -33,6 +33,12 @@ export const sidebarItems: NavGroup[] = [
         title: "Inicio",
         url: "/dashboard/default",
         icon: LayoutDashboard,
+      },
+      {
+        title: "Ley Karin",
+        url: "/dashboard/ley-karin",
+        icon: Shield,
+        adminOnly: true, // Temporalmente solo admins hasta definir roles
       },
       {
         title: "Usuarios",

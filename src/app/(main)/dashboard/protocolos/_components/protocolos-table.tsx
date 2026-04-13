@@ -13,13 +13,14 @@ import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 import { useUser } from "@/hooks/use-user";
 import { getFriendlyErrorMessage } from "@/lib/pb-error-handler";
 import { pb } from "@/lib/pocketbase";
+import { hasRole } from "@/lib/roles";
 
 import { getColumns, type ProtocoloRecord } from "./protocolos-columns";
 import { ProtocoloDialog } from "./protocolos-dialog";
 
 export function ProtocolosTable() {
   const user = useUser();
-  const isAdmin = user?.role?.toLowerCase() === "admin";
+  const isAdmin = hasRole(user?.role, "admin");
 
   const [data, setData] = useState<ProtocoloRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +42,7 @@ export function ProtocolosTable() {
 
       setData(records as unknown as ProtocoloRecord[]);
     } catch (error) {
-      if ((error as any).isAbort) return;
+      if (error instanceof Error && (error as { isAbort?: boolean }).isAbort) return;
       console.error("Failed to fetch protocolos:", error);
       const message = getFriendlyErrorMessage(error);
       toast.error("Error al cargar protocolos", { description: message });

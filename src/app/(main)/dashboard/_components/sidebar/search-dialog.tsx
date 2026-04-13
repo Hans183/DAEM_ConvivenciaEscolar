@@ -16,6 +16,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { useUser } from "@/hooks/use-user";
+import { hasRole } from "@/lib/roles";
 import { pb } from "@/lib/pocketbase";
 
 interface SearchResult {
@@ -32,7 +33,7 @@ export function SearchDialog() {
 
   const router = useRouter();
   const user = useUser();
-  const isAdmin = user?.role?.toLowerCase() === "admin";
+  const isAdmin = hasRole(user?.role, "admin");
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {

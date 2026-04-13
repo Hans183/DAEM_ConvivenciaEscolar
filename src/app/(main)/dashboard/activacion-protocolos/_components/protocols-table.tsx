@@ -10,6 +10,7 @@ import { DataTablePagination } from "@/components/data-table/data-table-paginati
 import { Button } from "@/components/ui/button";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 import { useUser } from "@/hooks/use-user";
+import { hasRole } from "@/lib/roles";
 import { getFriendlyErrorMessage } from "@/lib/pb-error-handler";
 import { pb } from "@/lib/pocketbase";
 
@@ -18,8 +19,8 @@ import { ProtocolDialog } from "./protocol-dialog";
 
 export function ProtocolsTable() {
   const user = useUser();
-  const isAdmin = user?.role?.toLowerCase() === "admin";
-  const isItinerante = user?.role?.toLowerCase() === "itinerante";
+  const isAdmin = hasRole(user?.role, "admin");
+  const isItinerante = hasRole(user?.role, "itinerante");
 
   const [data, setData] = useState<ProtocolActivation[]>([]);
   const [loading, setLoading] = useState(true);

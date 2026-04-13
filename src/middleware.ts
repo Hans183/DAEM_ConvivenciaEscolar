@@ -15,7 +15,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const isPublicPath = path.startsWith("/auth");
+  const isPublicPath =
+    path.startsWith("/auth") || path.startsWith("/ley-karin/denuncia");
 
   // Recupera la cookie cruda para pasarla a PocketBase
   const rawCookie = request.headers.get("cookie") || "";

@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { CircleHelp, ClipboardList, Command, Database, File, Search, Settings } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
+import { isAdminRole } from "@/lib/roles";
 
 import {
   Sidebar,
@@ -76,7 +77,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const collapsible = isSynced ? sidebarCollapsible : props.collapsible;
 
   const pbUser = useUser();
-  const isAdmin = pbUser?.role?.toLowerCase() === "admin";
+  const isAdmin = isAdminRole(pbUser?.role);
 
   // Filter out adminOnly items for non-admin users
   const visibleItems = sidebarItems.map((group) => ({
@@ -101,7 +102,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" className="h-auto" asChild>
               <Link prefetch={false} href="/dashboard/default">
-                <div className="flex items-center justify-center w-full">
+                <div className="flex w-full items-center justify-center">
                   <Image
                     src={resolvedThemeMode === "dark" ? "/img/logo_darkmode.svg" : "/img/logo_naranja.svg"}
                     alt={APP_CONFIG.name}

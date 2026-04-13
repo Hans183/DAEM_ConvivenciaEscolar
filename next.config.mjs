@@ -4,6 +4,11 @@ const nextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
   },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "10mb", // Permite subir archivos de evidencia en denuncias
+    },
+  },
   async redirects() {
     return [
       {

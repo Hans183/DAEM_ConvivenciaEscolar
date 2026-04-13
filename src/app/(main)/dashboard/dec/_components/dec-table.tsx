@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 import { useUser } from "@/hooks/use-user";
+import { hasRole } from "@/lib/roles";
 import { getFriendlyErrorMessage } from "@/lib/pb-error-handler";
 import { pb } from "@/lib/pocketbase";
 import { cn } from "@/lib/utils";
@@ -25,8 +26,8 @@ import { DecDialog } from "./dec-dialog";
 export function DecTable() {
   const user = useUser();
   const userId = user?.id ?? null;
-  const isAdmin = user?.role?.toLowerCase() === "admin";
-  const isItinerante = user?.role?.toLowerCase() === "itinerante";
+  const isAdmin = hasRole(user?.role, "admin");
+  const isItinerante = hasRole(user?.role, "itinerante");
   // Serialize establecimiento to a stable string for use as a dependency
   const establecimientoKey = JSON.stringify(user?.establecimiento ?? null);
   const searchParams = useSearchParams();
