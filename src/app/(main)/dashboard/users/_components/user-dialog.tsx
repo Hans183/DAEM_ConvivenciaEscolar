@@ -173,7 +173,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
           email: "",
           password: "",
           passwordConfirm: "",
-          role: "User",
+          role: ["User"],
           establecimiento: [],
         });
       }
