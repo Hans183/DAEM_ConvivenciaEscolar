@@ -46,6 +46,25 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
+  // --- RESTRICCIÓN DE ROL: Ley Karin ---
+  const user = pb.authStore.model;
+  if (user && path.startsWith("/dashboard")) {
+    const roles: string[] = Array.isArray(user.role) ? user.role : [user.role];
+    const hasLeyKarin = roles.some(r => typeof r === 'string' && r.toLowerCase() === 'ley karin');
+    const isAdmin = roles.some(r => typeof r === 'string' && r.toLowerCase() === 'admin');
+
+    if (hasLeyKarin && !isAdmin) {
+      // Permitir sólo el acceso a /dashboard/ley-karin y /dashboard/profile
+      const allowedPaths = ["/dashboard/ley-karin", "/dashboard/profile"];
+      const isAllowed = allowedPaths.some(allowedPath => path.startsWith(allowedPath));
+
+      if (!isAllowed) {
+        console.log(`[Middleware] Redirigiendo usuario Ley Karin desde ${path} a /dashboard/ley-karin`);
+        return NextResponse.redirect(new URL("/dashboard/ley-karin", request.url));
+      }
+    }
+  }
+
   return NextResponse.next();
 }
 

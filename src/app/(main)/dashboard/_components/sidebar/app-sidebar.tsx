@@ -79,11 +79,31 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pbUser = useUser();
   const isAdmin = isAdminRole(pbUser?.role);
 
-  // Filter out adminOnly items for non-admin users
-  const visibleItems = sidebarItems.map((group) => ({
-    ...group,
-    items: group.items.filter((item) => !item.adminOnly || isAdmin),
-  }));
+  // Filter sidebar items based on user roles (multi-role aware)
+  const userRoles = Array.isArray(pbUser?.role)
+    ? pbUser!.role.map((r: string) => r.toLowerCase())
+    : pbUser?.role
+      ? [String(pbUser.role).toLowerCase()]
+      : [];
+
+  const visibleItems = sidebarItems.map((group) => {
+    const groupItems = group.items.filter((item) => {
+      // If the item has an explicit roles list, check if user has any of those roles
+      if (item.roles && item.roles.length > 0) {
+        return item.roles.some((r) => userRoles.includes(r.toLowerCase()));
+      }
+      // Fall back to adminOnly flag
+      if (item.adminOnly) {
+        return isAdmin;
+      }
+      return true;
+    });
+
+    return {
+      ...group,
+      items: groupItems,
+    };
+  });
 
   // derived user object for NavUser, falling back to rootUser if not logged in
   // or mapping PB user fields to the expected format

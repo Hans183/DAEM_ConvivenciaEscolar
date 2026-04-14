@@ -22,7 +22,7 @@ export interface CreateUserPayload {
   email: string;
   password: string;
   passwordConfirm: string;
-  role: string;
+  role: string[];
   establecimiento: string[] | null;
   emailVisibility: boolean;
 }
@@ -32,7 +32,7 @@ export interface UpdateUserPayload {
   email: string;
   password?: string;
   passwordConfirm?: string;
-  role: string;
+  role: string[];
   establecimiento: string[] | null;
   emailVisibility: boolean;
 }
@@ -50,7 +50,7 @@ export interface UserRecord {
   email: string;
   username: string;
   avatar: string;
-  role: string;
+  role: string[];
   verified: boolean;
   created: string;
   establecimiento: string[];

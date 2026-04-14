@@ -16,6 +16,7 @@ export interface NavMainItem {
   comingSoon?: boolean;
   newTab?: boolean;
   adminOnly?: boolean;
+  roles?: string[]; // allowed roles (checked case-insensitively). If set, adminOnly is ignored.
 }
 
 export interface NavGroup {
@@ -38,7 +39,7 @@ export const sidebarItems: NavGroup[] = [
         title: "Ley Karin",
         url: "/dashboard/ley-karin",
         icon: Shield,
-        adminOnly: true, // Temporalmente solo admins hasta definir roles
+        roles: ["Admin", "Ley Karin"],
       },
       {
         title: "Usuarios",

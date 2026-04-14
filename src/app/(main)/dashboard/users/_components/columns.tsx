@@ -88,7 +88,11 @@ export const getColumns = ({ onEdit, onDelete }: GetColumnsProps): ColumnDef<Use
   {
     accessorKey: "role",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Rol" />,
-    cell: ({ row }) => <div className="w-[100px]">{row.getValue("role")}</div>,
+    cell: ({ row }) => {
+      const roles = row.getValue("role");
+      const rolesTxt = Array.isArray(roles) ? roles.join(", ") : (roles as string) || "Sin rol";
+      return <div className="w-[100px] truncate" title={rolesTxt}>{rolesTxt}</div>;
+    },
   },
   {
     accessorKey: "created",

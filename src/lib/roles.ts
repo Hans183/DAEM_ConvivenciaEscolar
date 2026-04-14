@@ -32,3 +32,10 @@ export function isAdminRole(role: unknown): boolean {
 export function isItineranteRole(role: unknown): boolean {
   return hasRole(role, "itinerante");
 }
+
+/**
+ * Verifica si el usuario tiene el rol Ley Karin.
+ */
+export function isLeyKarinRole(role: unknown): boolean {
+  return hasRole(role, "ley karin");
+}

@@ -10,6 +10,7 @@ import { z } from "zod";
 
 import { createUserAction, type UpdateUserPayload, type UserRecord, updateUserAction } from "@/app/actions/users";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import {
   Dialog,
@@ -22,7 +23,6 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getFriendlyErrorMessage } from "@/lib/pb-error-handler";
 import { pb } from "@/lib/pocketbase";
 import { cn } from "@/lib/utils";
@@ -43,8 +43,8 @@ const userFormSchema = z
       .optional()
       .or(z.literal("")),
     passwordConfirm: z.string().optional().or(z.literal("")),
-    role: z.string({
-      required_error: "Por favor seleccione un rol.",
+    role: z.array(z.string()).min(1, {
+      message: "Por favor seleccione al menos un rol.",
     }),
     establecimiento: z.array(z.string()).optional(),
   })
@@ -99,7 +99,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
       email: "",
       password: "",
       passwordConfirm: "",
-      role: "User",
+      role: ["User"],
       establecimiento: [],
     },
   });
@@ -124,7 +124,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
         email: "",
         password: "",
         passwordConfirm: "",
-        role: "User",
+        role: ["User"],
         establecimiento: [],
       });
     }
@@ -262,21 +262,46 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
             <FormField
               control={form.control}
               name="role"
-              render={({ field }) => (
+              render={() => (
                 <FormItem>
-                  <FormLabel>Rol</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccione un rol" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="User">Usuario</SelectItem>
-                      <SelectItem value="Admin">Administrador</SelectItem>
-                      <SelectItem value="Itinerante">Itinerante</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="mb-2">
+                    <FormLabel>Roles</FormLabel>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 border rounded-md p-4">
+                    {[
+                      { id: "User", label: "Usuario" },
+                      { id: "Admin", label: "Administrador" },
+                      { id: "Itinerante", label: "Itinerante" },
+                      { id: "Ley Karin", label: "Ley Karin" },
+                    ].map((roleItem) => (
+                      <FormField
+                        key={roleItem.id}
+                        control={form.control}
+                        name="role"
+                        render={({ field }) => {
+                          return (
+                            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value?.includes(roleItem.id)}
+                                  onCheckedChange={(checked) => {
+                                    return checked
+                                      ? field.onChange([...(field.value || []), roleItem.id])
+                                      : field.onChange(
+                                          field.value?.filter((value) => value !== roleItem.id)
+                                        );
+                                  }}
+                                />
+                              </FormControl>
+                              <FormLabel className="font-normal cursor-pointer text-sm">
+                                {roleItem.label}
+                              </FormLabel>
+                            </FormItem>
+                          );
+                        }}
+                      />
+                    ))}
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
@@ -285,8 +310,8 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
               control={form.control}
               name="establecimiento"
               render={({ field }) => {
-                const role = form.watch("role");
-                const isItinerante = role === "Itinerante";
+                const role = form.watch("role") || [];
+                const isItinerante = role.includes("Itinerante");
                 const valueArray = Array.isArray(field.value) ? field.value : [];
 
                 let displayText = "Seleccione establecimiento(s)";

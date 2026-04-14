@@ -3,8 +3,10 @@
 import { denunciaKarinSchema } from "../(external)/ley-karin/denuncia/schema";
 import { Resend } from "resend";
 import DenunciaRecibidaEmail from "@/components/emails/denuncia-recibida-email";
+import AlertaLeyKarinEmail from "@/components/emails/alerta-ley-karin-email";
 import * as React from "react";
 import { pb } from "@/lib/pocketbase";
+import { RecaptchaError, verifyRecaptchaToken } from "@/lib/recaptcha";
 import PocketBase from "pocketbase";
 
 function getAdminPb() {
@@ -54,6 +56,26 @@ const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
 export async function submitDenunciaKarin(formData: FormData) {
   try {
+    // --- reCAPTCHA verification (must be first) ---
+    const recaptchaToken = formData.get("recaptchaToken");
+    formData.delete("recaptchaToken"); // Remove before passing to PocketBase
+
+    if (!recaptchaToken || typeof recaptchaToken !== "string") {
+      return { error: "Token de verificación de seguridad requerido." };
+    }
+
+    try {
+      const score = await verifyRecaptchaToken(recaptchaToken, "denuncia_karin", 0.4);
+      console.log(`[reCAPTCHA] Denuncia Ley Karin score: ${score}`);
+    } catch (err) {
+      if (err instanceof RecaptchaError) {
+        console.warn(`[reCAPTCHA] Denuncia rechazada: ${err.message}`);
+        return { error: "Verificación de seguridad fallida. Por favor recarga la página e intenta de nuevo." };
+      }
+      throw err;
+    }
+    // --- Fin verificación reCAPTCHA ---
+
     const rawData = Object.fromEntries(formData.entries());
     
     // Zod parsing (Convert boolean str to boolean to match schema)
@@ -93,10 +115,36 @@ export async function submitDenunciaKarin(formData: FormData) {
       });
     }
 
-    // Opcional: Enviar correo de notificación a los administradores
-    // if (resend) {
-    //   await resend.emails.send({ ... }) 
-    // }
+    // Enviar correo de notificación a los encargados de Ley Karin
+    if (resend) {
+      try {
+        const adminPb = getAdminPb();
+        const adminEmail = process.env.PB_ADMIN_EMAIL;
+        const adminPassword = process.env.PB_ADMIN_PASSWORD;
+
+        if (adminEmail && adminPassword) {
+          await adminPb.admins.authWithPassword(adminEmail, adminPassword);
+          
+          // Buscar usuarios que tengan el rol Ley Karin
+          const users = await adminPb.collection("users").getFullList({
+            filter: "role ?~ 'Ley Karin'",
+          });
+
+          const emails = users.map((u) => u.email).filter(Boolean);
+
+          if (emails.length > 0) {
+            await resend.emails.send({
+              from: "Convivencia Escolar <noreply@updates.daemlu.cl>",
+              to: emails,
+              subject: "Nueva Denuncia recibida - Ley Karin",
+              react: React.createElement(AlertaLeyKarinEmail, {}),
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Error enviando alerta a encargados Ley Karin:", err);
+      }
+    }
 
     return { success: true };
   } catch (error) {

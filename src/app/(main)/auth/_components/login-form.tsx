@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -9,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { useRecaptcha } from "@/hooks/use-recaptcha";
 import { getFriendlyErrorMessage } from "@/lib/pb-error-handler";
 
 const FormSchema = z.object({
@@ -18,6 +21,9 @@ const FormSchema = z.object({
 });
 
 export function LoginForm() {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { executeRecaptcha, isReady } = useRecaptcha();
+
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -28,15 +34,37 @@ export function LoginForm() {
   });
 
   const onSubmit = async (data: z.infer<typeof FormSchema>) => {
+    setIsSubmitting(true);
     try {
-      const { pb } = await import("@/lib/pocketbase");
-      await pb.collection("users").authWithPassword(data.email, data.password);
+      // 1. Get reCAPTCHA token
+      const recaptchaToken = await executeRecaptcha("login");
 
-      // Export auth data to cookie for middleware
-      document.cookie = pb.authStore.exportToCookie({ httpOnly: false });
+      // 2. Call the API Route which verifies reCAPTCHA server-side then logs in
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+          recaptchaToken,
+        }),
+      });
 
-      toast.success("Login successful!");
-      // Redirect to dashboard
+      const result = await response.json();
+
+      if (!response.ok) {
+        toast.error("Error al iniciar sesión", {
+          description: result.error || "Por favor verifica tus credenciales e intenta de nuevo.",
+        });
+        return;
+      }
+
+      // 3. Apply the cookie returned from the server (same as original flow)
+      if (result.cookie) {
+        document.cookie = result.cookie;
+      }
+
+      toast.success("¡Sesión iniciada correctamente!");
       window.location.href = "/dashboard";
     } catch (error) {
       const message = getFriendlyErrorMessage(error);
@@ -44,6 +72,8 @@ export function LoginForm() {
         description: message || "Por favor verifica tus credenciales e intenta de nuevo.",
       });
       console.error(error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -101,8 +131,8 @@ export function LoginForm() {
             </FormItem>
           )}
         />
-        <Button className="w-full" type="submit">
-          Login
+        <Button className="w-full" type="submit" disabled={isSubmitting || !isReady}>
+          {isSubmitting ? "Iniciando sesión..." : !isReady ? "Cargando..." : "Login"}
         </Button>
       </form>
     </Form>

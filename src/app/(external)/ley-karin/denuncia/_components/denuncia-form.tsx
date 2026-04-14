@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { useRecaptcha } from "@/hooks/use-recaptcha";
 import { formatRut } from "@/lib/rut-utils";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +39,7 @@ import { type DenunciaKarinFormValues, denunciaKarinSchema } from "../schema";
 export function DenunciaForm({ establecimientos = [] }: { establecimientos?: { id: string, nombre: string }[] }) {
   const [isPending, startTransition] = useTransition();
   const [isSuccess, setIsSuccess] = useState(false);
+  const { executeRecaptcha, isReady } = useRecaptcha();
 
   const form = useForm<DenunciaKarinFormValues>({
     resolver: zodResolver(denunciaKarinSchema),
@@ -73,6 +75,9 @@ export function DenunciaForm({ establecimientos = [] }: { establecimientos?: { i
   function onSubmit(values: DenunciaKarinFormValues) {
     startTransition(async () => {
       try {
+        // 1. Get reCAPTCHA token before building FormData
+        const recaptchaToken = await executeRecaptcha("denuncia_karin");
+
         const formData = new FormData();
         Object.entries(values).forEach(([key, value]) => {
           if (value !== undefined && value !== null && key !== "evidencia") {
@@ -86,6 +91,9 @@ export function DenunciaForm({ establecimientos = [] }: { establecimientos?: { i
             formData.append("evidencia", values.evidencia[i]);
           }
         }
+
+        // 2. Append reCAPTCHA token (removed server-side before saving to PocketBase)
+        formData.append("recaptchaToken", recaptchaToken);
         
         // Enviamos el formData completo al server action
         const res = await submitDenunciaKarin(formData);
@@ -749,13 +757,18 @@ export function DenunciaForm({ establecimientos = [] }: { establecimientos?: { i
         <div className="flex justify-center pt-8 md:justify-end">
           <Button
             type="submit"
-            disabled={isPending}
+            disabled={isPending || !isReady}
             className="h-14 w-full px-10 font-bold text-xl shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98] md:w-auto"
           >
             {isPending ? (
               <>
                 <Loader2 className="mr-3 h-6 w-6 animate-spin" />
                 Enviando denuncia...
+              </>
+            ) : !isReady ? (
+              <>
+                <Loader2 className="mr-3 h-6 w-6 animate-spin" />
+                Cargando...
               </>
             ) : (
               "Ingresar Denuncia"
