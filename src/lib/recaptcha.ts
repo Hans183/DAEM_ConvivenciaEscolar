@@ -39,6 +39,7 @@ export async function verifyRecaptchaToken(
   minScore: number = MIN_SCORE_DEFAULT,
 ): Promise<number> {
   const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+  const isDev = process.env.NODE_ENV === "development";
 
   if (!secretKey) {
     throw new RecaptchaError("RECAPTCHA_SECRET_KEY is not configured.");
@@ -64,17 +65,30 @@ export async function verifyRecaptchaToken(
 
   if (!data.success) {
     const codes = data["error-codes"]?.join(", ") ?? "unknown";
+    console.error(`[reCAPTCHA Fail] Codes: ${codes} for action: ${expectedAction}`);
     throw new RecaptchaError(`reCAPTCHA verification failed: ${codes}`);
   }
 
+  console.log(`[reCAPTCHA Success] Action: ${data.action}, Score: ${data.score}, Hostname: ${data.hostname}`);
+
   // Optionally verify the action matches to prevent token reuse across forms
   if (expectedAction && data.action !== expectedAction) {
+    console.warn(`[reCAPTCHA Warning] Action mismatch: expected "${expectedAction}", got "${data.action}"`);
     throw new RecaptchaError(
       `reCAPTCHA action mismatch: expected "${expectedAction}", got "${data.action}"`,
     );
   }
 
-  if (data.score < minScore) {
+  const effectiveMinScore = isDev ? 0.1 : minScore;
+
+  if (data.score < effectiveMinScore) {
+    console.warn(`[reCAPTCHA Warning] Score too low: ${data.score} (minimum required: ${effectiveMinScore})`);
+    
+    if (isDev) {
+      console.log("[reCAPTCHA Dev] Allowing low score in development mode.");
+      return data.score;
+    }
+
     throw new RecaptchaError(
       `reCAPTCHA score too low: ${data.score} (minimum: ${minScore})`,
       data.score,
