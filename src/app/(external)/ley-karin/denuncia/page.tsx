@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
+
+import { FileDown } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -39,6 +42,18 @@ export default async function LeyKarinDenunciaPage() {
               sexual o de violencia en el trabajo.
             </p>
           </div>
+          <Link
+            href="/PROTOCOLO_LEY_KARIN-DECRETO_EXENTO_N_8436.pdf"
+            target="_blank"
+            className="inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-5 py-3 font-semibold text-primary text-sm shadow-sm transition-all hover:bg-primary/10 hover:shadow-md"
+          >
+            <FileDown className="h-5 w-5" />
+            Descargar Protocolo Ley Karin
+          </Link>
+          <p className="mx-auto max-w-2xl text-slate-500 text-xs leading-relaxed">
+            Protocolo Ley Karin del Municipio de La Unión — Contiene los anexos para denuncias, 
+            plazos y pasos a seguir en el proceso de denuncia.
+          </p>
         </div>
 
         <Card className="w-full overflow-hidden border-none bg-white shadow-2xl shadow-slate-200/60">

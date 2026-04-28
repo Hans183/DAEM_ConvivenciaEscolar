@@ -10,7 +10,7 @@ import { submitDenunciaKarin } from "@/app/actions/ley-karin-actions";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Switch } from "@/components/ui/switch";
+
 import {
   Form,
   FormControl,
@@ -55,20 +55,19 @@ export function DenunciaForm({ establecimientos = [] }: { establecimientos?: { i
       areaDenunciante: "",
       establecimiento: "",
       nombreJefaturaDenunciante: "",
-      cargoJefaturaDenunciante: "",
+      cargoJefaturaDenunciante: undefined,
       
       nombresDenunciado: "",
       cargoDenunciado: "",
       areaDenunciado: "",
       nombreJefaturaDenunciado: "",
-      cargoJefaturaDenunciado: "",
+      cargoJefaturaDenunciado: undefined,
       
-      vinculo: "",
+      vinculo: undefined,
       relatoHechos: "",
       temporalidad: "",
       testigos: "",
       observaciones: "",
-      firmaAnonima: false,
     },
   });
 
@@ -446,12 +445,23 @@ export function DenunciaForm({ establecimientos = [] }: { establecimientos?: { i
                   <FormLabel className="font-semibold text-slate-700">
                     Cargo Jefatura Directa
                   </FormLabel>
-                  <FormControl>
-                    <Input
-                      className="h-11 border-slate-300 bg-white focus-visible:ring-primary/20"
-                      {...field}
-                    />
-                  </FormControl>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="h-11 border-slate-300 bg-white focus:border-primary focus:ring-primary/20">
+                        <SelectValue placeholder="Selecciona un cargo" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Docente">Docente</SelectItem>
+                      <SelectItem value="Directivo">Directivo</SelectItem>
+                      <SelectItem value="Apoderado">Apoderado</SelectItem>
+                      <SelectItem value="Asistente">Asistente</SelectItem>
+                      <SelectItem value="Estudiante">Estudiante</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -554,12 +564,23 @@ export function DenunciaForm({ establecimientos = [] }: { establecimientos?: { i
                   <FormLabel className="font-semibold text-slate-700">
                     Cargo Jefatura Directa
                   </FormLabel>
-                  <FormControl>
-                    <Input
-                      className="h-11 border-slate-300 bg-white focus-visible:ring-primary/20"
-                      {...field}
-                    />
-                  </FormControl>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="h-11 border-slate-300 bg-white focus:border-primary focus:ring-primary/20">
+                        <SelectValue placeholder="Selecciona un cargo" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Docente">Docente</SelectItem>
+                      <SelectItem value="Directivo">Directivo</SelectItem>
+                      <SelectItem value="Apoderado">Apoderado</SelectItem>
+                      <SelectItem value="Asistente">Asistente</SelectItem>
+                      <SelectItem value="Estudiante">Estudiante</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -582,19 +603,28 @@ export function DenunciaForm({ establecimientos = [] }: { establecimientos?: { i
             control={form.control}
             name="vinculo"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="max-w-md">
                 <FormLabel className="font-semibold text-slate-700">
                   Vínculo con el/la denunciado/a
                 </FormLabel>
-                <FormDescription>
-                  Ej: Jefatura directa, compañero, usuario externo, etc.
-                </FormDescription>
-                <FormControl>
-                  <Input
-                    className="h-11 border-slate-300 bg-white focus-visible:ring-primary/20"
-                    {...field}
-                  />
-                </FormControl>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger className="h-11 border-slate-300 bg-white focus:border-primary focus:ring-primary/20">
+                      <SelectValue placeholder="Selecciona el vínculo" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="Docente">Docente</SelectItem>
+                    <SelectItem value="Directivo">Directivo</SelectItem>
+                    <SelectItem value="Apoderado">Apoderado</SelectItem>
+                    <SelectItem value="Asistente">Asistente</SelectItem>
+                    <SelectItem value="Estudiante">Estudiante</SelectItem>
+                    <SelectItem value="Externo">Externo</SelectItem>
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
@@ -728,30 +758,22 @@ export function DenunciaForm({ establecimientos = [] }: { establecimientos?: { i
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="firmaAnonima"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-xl border-2 border-slate-200 bg-slate-50/50 p-5 shadow-sm transition-colors hover:bg-slate-50">
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                    className="mt-0.5"
-                  />
-                </FormControl>
-                <div className="space-y-1.5 leading-none">
-                  <FormLabel className="font-bold text-base text-slate-800">
-                    Solicito anonimato / reserva de identidad
-                  </FormLabel>
-                  <FormDescription className="text-slate-600">
-                    Entiendo que la ley me protege y solicito formalmente el
-                    resguardo de mi identidad durante el proceso.
-                  </FormDescription>
-                </div>
-              </FormItem>
-            )}
-          />
+          <div className="rounded-xl border-2 border-slate-200 bg-slate-50/50 p-5 shadow-sm space-y-3">
+            <h4 className="font-bold text-base text-slate-800">
+              Declaración de Confidencialidad
+            </h4>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              De conformidad con lo establecido en la Ley N°21.643 (Ley Karin), toda la información 
+              proporcionada en este formulario será tratada con estricta confidencialidad. La identidad 
+              del denunciante, los antecedentes aportados y el contenido de la denuncia serán resguardados 
+              durante todo el proceso de investigación. El incumplimiento de esta obligación de reserva 
+              por parte de los intervinientes será sancionado conforme a la normativa vigente.
+            </p>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              Al enviar este formulario, declaro que los hechos aquí descritos son verídicos y que comprendo 
+              que la información será utilizada exclusivamente para los fines establecidos por la ley.
+            </p>
+          </div>
         </div>
 
         <div className="flex justify-center pt-8 md:justify-end">

@@ -24,17 +24,23 @@ export const denunciaKarinSchema = z.object({
   areaDenunciante: z.string().min(2, "Área de desempeño es requerida"),
   establecimiento: z.string().min(1, "El establecimiento es requerido"),
   nombreJefaturaDenunciante: z.string().min(2, "Nombre de jefatura es requerido"),
-  cargoJefaturaDenunciante: z.string().min(2, "Cargo de jefatura es requerido"),
+  cargoJefaturaDenunciante: z.enum(["Docente", "Directivo", "Apoderado", "Asistente", "Estudiante"], {
+    required_error: "Debes seleccionar el cargo de la jefatura.",
+  }),
 
   // 3. Identificación de las Partes - Denunciado
   nombresDenunciado: z.string().min(2, "El nombre del denunciado es requerido"),
   cargoDenunciado: z.string().min(2, "Cargo del denunciado es requerido"),
   areaDenunciado: z.string().min(2, "Área de desempeño del denunciado es requerida"),
   nombreJefaturaDenunciado: z.string().min(2, "Nombre de la jefatura es requerido"),
-  cargoJefaturaDenunciado: z.string().min(2, "Cargo de la jefatura es requerido"),
+  cargoJefaturaDenunciado: z.enum(["Docente", "Directivo", "Apoderado", "Asistente", "Estudiante"], {
+    required_error: "Debes seleccionar el cargo de la jefatura.",
+  }),
 
   // 4. Relación y Relato de los Hechos
-  vinculo: z.string().min(2, "El vínculo es requerido (ej. Jefatura, compañero, etc.)"),
+  vinculo: z.enum(["Docente", "Directivo", "Apoderado", "Asistente", "Estudiante", "Externo"], {
+    required_error: "Debes seleccionar el vínculo con el/la denunciado/a.",
+  }),
   relatoHechos: z.string().min(20, "Describe detalladamente los hechos (mínimo 20 caracteres)"),
   temporalidad: z.string().min(2, "Debes señalar hace cuánto tiempo ocurren los hechos"),
   testigos: z.string().optional(), // Puede no haber testigos
@@ -42,7 +48,6 @@ export const denunciaKarinSchema = z.object({
 
   // 5. Cierre
   observaciones: z.string().optional(),
-  firmaAnonima: z.boolean().default(false).optional(),
 });
 
 export type DenunciaKarinFormValues = z.infer<typeof denunciaKarinSchema>;
