@@ -142,7 +142,8 @@ export const generateDecPDF = (record: DecRecord) => {
 
   // Section 1
   addSectionTitle("I. IDENTIFICACIÓN Y DATOS GENERALES");
-  const fecha = record.dia ? format(new Date(record.dia), "PPPP", { locale: es }) : "-";
+  const parsedDate = record.dia ? new Date(record.dia.replace(" ", "T")) : null;
+  const fecha = parsedDate && !isNaN(parsedDate.getTime()) ? format(parsedDate, "PPPP", { locale: es }) : "-";
   addField("Fecha de Registro", fecha);
 
   const horaVal = record.hora === "Otro" ? record.hora_otro : record.hora;

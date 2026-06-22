@@ -98,9 +98,11 @@ export const getColumns = ({ onEdit, onDelete }: GetColumnsProps): ColumnDef<Use
     accessorKey: "created",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Creado" />,
     cell: ({ row }) => {
+      const dateStr = row.getValue("created") as string;
+      const parsedDate = dateStr ? new Date(dateStr.replace(" ", "T")) : null;
       return (
         <div className="w-[100px] text-muted-foreground">
-          {format(new Date(row.getValue("created")), "MMM d, yyyy")}
+          {parsedDate && !isNaN(parsedDate.getTime()) ? format(parsedDate, "MMM d, yyyy") : "-"}
         </div>
       );
     },

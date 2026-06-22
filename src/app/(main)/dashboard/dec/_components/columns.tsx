@@ -101,7 +101,7 @@ export const getColumns = ({ onEdit, onDelete, isAdmin, isItinerante }: ColumnsP
     cell: ({ row }) => {
       const dateStr = row.getValue("dia") as string;
       if (!dateStr) return <div>-</div>;
-      return <div>{new Date(dateStr).toLocaleDateString("es-CL")}</div>;
+      return <div>{new Date(dateStr.replace(" ", "T")).toLocaleDateString("es-CL")}</div>;
     },
   },
   {

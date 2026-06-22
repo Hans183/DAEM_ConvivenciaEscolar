@@ -21,7 +21,7 @@ import { getFriendlyErrorMessage } from "@/lib/pb-error-handler";
 import { hasRole } from "@/lib/roles";
 import { pb } from "@/lib/pocketbase";
 import { formatRut, validateRut } from "@/lib/rut-utils";
-import { cn } from "@/lib/utils";
+import { cn, getLocalDatetimeString } from "@/lib/utils";
 
 import type { DecRecord } from "./columns";
 
@@ -271,7 +271,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
   const form = useForm<DecFormValues>({
     resolver: zodResolver(decFormSchema),
     defaultValues: {
-      dia: new Date().toISOString().slice(0, 16),
+      dia: getLocalDatetimeString(new Date()),
       nombre_estudiante: "",
       rut_estudiante: "",
       edad_estudiante: 0,
@@ -326,7 +326,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
     if (record) {
       reset({
         ...record,
-        dia: record.dia ? new Date(record.dia).toISOString().slice(0, 16) : "",
+        dia: getLocalDatetimeString(record.dia),
         antecedentes: Array.isArray(record.antecedentes) ? record.antecedentes : [],
         conductas: Array.isArray(record.conductas) ? record.conductas : [],
         consecuentes: Array.isArray(record.consecuentes) ? record.consecuentes : [],
@@ -341,7 +341,7 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
       });
     } else {
       reset({
-        dia: new Date().toISOString().slice(0, 16),
+        dia: getLocalDatetimeString(new Date()),
         nombre_estudiante: "",
         rut_estudiante: "",
         edad_estudiante: 0,
@@ -381,9 +381,13 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
   const onSubmit = async (data: DecFormValues) => {
     setLoading(true);
     try {
+      // Safely parse local input date representation back to UTC ISO string
+      const parsedDate = new Date(data.dia);
+      const diaIso = isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString();
+
       const submitData = {
         ...data,
-        dia: new Date(data.dia).toISOString(),
+        dia: diaIso,
         establecimiento: hasGlobalAccess ? data.establecimiento || null : userEstablecimiento || null,
       };
 

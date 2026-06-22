@@ -43,7 +43,7 @@ export function ResumenDecTable({ data, isAdmin }: ResumenDecTableProps) {
                     className={`border-b last:border-0 ${i % 2 === 0 ? "" : "bg-muted/20"} hover:bg-muted/40 transition-colors`}
                   >
                     <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                      {rec.dia ? new Date(rec.dia).toLocaleDateString("es-CL") : "—"}
+                      {rec.dia ? new Date(rec.dia.replace(" ", "T")).toLocaleDateString("es-CL") : "—"}
                     </td>
                     <td className="px-4 py-3 font-medium">{rec.nombre_estudiante || "—"}</td>
                     <td className="px-4 py-3 text-muted-foreground">{rec.curso_estudiante || "—"}</td>

@@ -50,14 +50,18 @@ export function DecTable() {
 
       if (filtroEst !== "todos") {
         filter = `establecimiento = "${filtroEst}"`;
-      } else if (isItinerante && establecimiento) {
-        const estArray = Array.isArray(establecimiento) ? establecimiento : [establecimiento];
-
-        if (estArray.length > 0) {
-          filter = estArray.map((id) => `establecimiento = "${id}"`).join(" || ");
+      } else if (!isAdmin) {
+        if (establecimiento) {
+          const estArray = Array.isArray(establecimiento) ? establecimiento : [establecimiento];
+          const validEsts = estArray.filter(Boolean);
+          if (validEsts.length > 0) {
+            filter = validEsts.map((id) => `establecimiento = "${id}"`).join(" || ");
+          } else {
+            filter = 'establecimiento = "none"';
+          }
+        } else {
+          filter = 'establecimiento = "none"';
         }
-      } else if (!isAdmin && establecimiento) {
-        filter = `establecimiento = "${establecimiento}"`;
       }
 
       const records = await pb.collection("DEC").getFullList({
@@ -73,7 +77,7 @@ export function DecTable() {
     } finally {
       setLoading(false);
     }
-  }, [userId, isAdmin, isItinerante, establecimientoKey, filtroEst]);
+  }, [userId, isAdmin, establecimientoKey, filtroEst]);
 
   const handleCreate = useCallback(() => {
     setSelectedRecord(null);

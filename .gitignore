@@ -16,6 +16,10 @@
 # production
 /build
 
+# agentes IA
+.agent/
+.agents/
+
 # misc
 .DS_Store
 *.pem

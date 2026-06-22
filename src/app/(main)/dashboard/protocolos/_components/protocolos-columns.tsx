@@ -117,9 +117,14 @@ export const getColumns = ({ onEdit, onDelete, isAdmin }: GetColumnsProps): Colu
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-      cell: ({ row }) => (
-        <div className="text-muted-foreground">{new Date(row.getValue("created")).toLocaleDateString("es-CL")}</div>
-      ),
+      cell: ({ row }) => {
+        const dateStr = row.getValue("created") as string;
+        return (
+          <div className="text-muted-foreground">
+            {dateStr ? new Date(dateStr.replace(" ", "T")).toLocaleDateString("es-CL") : "-"}
+          </div>
+        );
+      },
     },
 
     /* Actions */

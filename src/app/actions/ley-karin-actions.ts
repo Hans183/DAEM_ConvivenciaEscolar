@@ -153,6 +153,30 @@ export async function submitDenunciaKarin(formData: FormData) {
   }
 }
 
+export async function submitDenunciaKarinDashboard(formData: FormData) {
+  try {
+    const rawData = Object.fromEntries(formData.entries());
+
+    const dataToValidate = {
+      ...rawData,
+      firmaAnonima: rawData.firmaAnonima === "true",
+    };
+
+    denunciaKarinSchema.parse(dataToValidate);
+
+    // Set default state for new complaints
+    formData.append("estado", "Ingresada");
+    formData.append("createdAt", new Date().toISOString());
+
+    await pb.collection("denuncias_ley_karin").create(formData);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error enviando denuncia desde dashboard:", error);
+    return { error: "Los datos de la denuncia son inválidos o hubo un error al guardar." };
+  }
+}
+
 export async function updateEstadoDenunciaKarin(id: string, nuevoEstado: string) {
   try {
     await pb.collection("denuncias_ley_karin").update(id, {
