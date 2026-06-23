@@ -1,13 +1,16 @@
 "use server";
 
-import { denunciaKarinSchema } from "../(external)/ley-karin/denuncia/schema";
-import { Resend } from "resend";
-import DenunciaRecibidaEmail from "@/components/emails/denuncia-recibida-email";
-import AlertaLeyKarinEmail from "@/components/emails/alerta-ley-karin-email";
 import * as React from "react";
+
+import PocketBase from "pocketbase";
+import { Resend } from "resend";
+
+import AlertaLeyKarinEmail from "@/components/emails/alerta-ley-karin-email";
+import DenunciaRecibidaEmail from "@/components/emails/denuncia-recibida-email";
 import { pb } from "@/lib/pocketbase";
 import { RecaptchaError, verifyRecaptchaToken } from "@/lib/recaptcha";
-import PocketBase from "pocketbase";
+
+import { denunciaKarinSchema } from "../(external)/ley-karin/denuncia/schema";
 
 function getAdminPb() {
   const url = process.env.NEXT_PUBLIC_POCKETBASE_URL ?? "https://apiconvivencia.daemlu.cl";
@@ -36,7 +39,7 @@ export async function getEstablecimientosKarin() {
     });
 
     // Extract only necessary data (id, nombre) to pass to client
-    const establecimientos = records.map(record => ({
+    const establecimientos = records.map((record) => ({
       id: record.id,
       nombre: record.nombre,
     }));
@@ -47,7 +50,6 @@ export async function getEstablecimientosKarin() {
     return { success: false, error: "Error al cargar establecimientos." };
   }
 }
-
 
 // Si la env var de Resend no está presente, se creará una instancia mock o fallback?
 // Generalmente `new Resend(...)` espera la env var en el construtor.
@@ -77,27 +79,29 @@ export async function submitDenunciaKarin(formData: FormData) {
     // --- Fin verificación reCAPTCHA ---
 
     const rawData = Object.fromEntries(formData.entries());
-    
+
     // Zod parsing (Convert boolean str to boolean to match schema)
     const dataToValidate = {
       ...rawData,
       firmaAnonima: rawData.firmaAnonima === "true",
     };
-    
+
     const validatedData = denunciaKarinSchema.parse(dataToValidate);
 
     // Conectar a PocketBase e insertar los datos
     // Modificamos el formData original que trae los archivos y añadimos el estado por defecto
     formData.append("estado", "Ingresada");
-    
+
     // Añadir la fecha de creación en el momento exacto del envío
     formData.append("createdAt", new Date().toISOString());
-    
+
     // Pocketbase maneja FormData nativamente para soportar subidas de archivos (evidencia)
     await pb.collection("denuncias_ley_karin").create(formData);
 
-    const fechaEnvio = new Date().toLocaleDateString("es-CL", { 
-      year: 'numeric', month: 'long', day: 'numeric' 
+    const fechaEnvio = new Date().toLocaleDateString("es-CL", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
 
     // Enviar correo de acuse de recibo si hay clave de Resend y proporcionó correo
@@ -110,7 +114,7 @@ export async function submitDenunciaKarin(formData: FormData) {
           nombresDenunciante: validatedData.nombresDenunciante,
           materia: validatedData.materia,
           fecha: fechaEnvio,
-          anonima: validatedData.firmaAnonima,
+          anonima: rawData.firmaAnonima === "true",
         }),
       });
     }
@@ -124,7 +128,7 @@ export async function submitDenunciaKarin(formData: FormData) {
 
         if (adminEmail && adminPassword) {
           await adminPb.admins.authWithPassword(adminEmail, adminPassword);
-          
+
           // Buscar usuarios que tengan el rol Ley Karin
           const users = await adminPb.collection("users").getFullList({
             filter: "role ?~ 'Ley Karin'",
@@ -180,7 +184,7 @@ export async function submitDenunciaKarinDashboard(formData: FormData) {
 export async function updateEstadoDenunciaKarin(id: string, nuevoEstado: string) {
   try {
     await pb.collection("denuncias_ley_karin").update(id, {
-      estado: nuevoEstado
+      estado: nuevoEstado,
     });
     return { success: true };
   } catch (error) {
