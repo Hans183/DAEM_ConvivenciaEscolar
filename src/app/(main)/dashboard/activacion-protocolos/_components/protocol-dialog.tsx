@@ -24,9 +24,9 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUser } from "@/hooks/use-user";
-import { hasRole } from "@/lib/roles";
 import { getFriendlyErrorMessage } from "@/lib/pb-error-handler";
 import { pb } from "@/lib/pocketbase";
+import { hasRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 
 import type { ProtocolActivation } from "./columns";

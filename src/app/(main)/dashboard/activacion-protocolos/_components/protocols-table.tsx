@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { Building2, Check, ChevronsUpDown, Plus } from "lucide-react";
+import { Building2, Check, ChevronsUpDown, FileDown, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { DataTable } from "@/components/data-table/data-table";
@@ -13,17 +13,28 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 import { useUser } from "@/hooks/use-user";
-import { hasRole } from "@/lib/roles";
 import { getFriendlyErrorMessage } from "@/lib/pb-error-handler";
 import { pb } from "@/lib/pocketbase";
+import { hasRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 
 import { getColumns, type ProtocolActivation } from "./columns";
 import { ProtocolDialog } from "./protocol-dialog";
+import { ReportModal } from "./report-modal";
 
 const MONTHS_SPANISH = [
-  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
 ];
 
 const YEARS = ["2024", "2025", "2026", "2027"];
@@ -36,6 +47,7 @@ export function ProtocolsTable() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedProtocol, setSelectedProtocol] = useState<ProtocolActivation | null>(null);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
 
   // Filtros
   const [filtroEst, setFiltroEst] = useState<string>("todos");
@@ -171,8 +183,7 @@ export function ProtocolsTable() {
                 <Button variant="outline" role="combobox" aria-expanded={comboboxOpen} className="h-9 justify-between">
                   {filtroEst === "todos" ? (
                     <>
-                      <Building2 className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
-                      🌐 Todos los establecimientos
+                      <Building2 className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />🌐 Todos los establecimientos
                     </>
                   ) : (
                     <>
@@ -196,8 +207,8 @@ export function ProtocolsTable() {
                           setComboboxOpen(false);
                         }}
                       >
-                        <Check className={cn("mr-2 h-4 w-4", filtroEst === "todos" ? "opacity-100" : "opacity-0")} />
-                        🌐 Todos los establecimientos
+                        <Check className={cn("mr-2 h-4 w-4", filtroEst === "todos" ? "opacity-100" : "opacity-0")} />🌐
+                        Todos los establecimientos
                       </CommandItem>
                       {userEsts.map((est) => (
                         <CommandItem
@@ -250,7 +261,11 @@ export function ProtocolsTable() {
           </Select>
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setReportModalOpen(true)}>
+            <FileDown className="mr-2 h-4 w-4" />
+            Generar Reporte
+          </Button>
           <Button onClick={handleCreate}>
             <Plus className="mr-2 h-4 w-4" />
             Agregar Registro
@@ -273,6 +288,8 @@ export function ProtocolsTable() {
         protocol={selectedProtocol}
         onSuccess={fetchData}
       />
+
+      <ReportModal open={reportModalOpen} onOpenChange={setReportModalOpen} />
     </div>
   );
 }

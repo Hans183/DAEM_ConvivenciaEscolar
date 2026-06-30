@@ -3,7 +3,6 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -11,7 +10,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -94,7 +92,7 @@ export const getColumns = ({ onEdit, onDelete, isAdmin }: GetColumnsProps): Colu
         const expandProxy = row.original.expand?.protocolo;
         const proto = Array.isArray(expandProxy) ? expandProxy[0] : expandProxy;
         const name = proto?.item || proto?.nombre || proto?.name || row.getValue("protocolo");
-        const display = name && name.length > 50 ? name.slice(0, 50) + "…" : name;
+        const display = name && name.length > 50 ? `${name.slice(0, 50)}…` : name;
         return <div className="font-medium">{display}</div>;
       },
     },
