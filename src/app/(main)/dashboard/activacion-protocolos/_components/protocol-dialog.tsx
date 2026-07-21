@@ -198,7 +198,9 @@ export function ProtocolDialog({ open, onOpenChange, protocol, onSuccess }: Prot
         meses: data.meses,
         cantidad: data.cantidad,
         protocolo: data.protocolo,
-        establecimiento: canChooseEstablecimiento ? data.establecimiento || null : singleEstId || null,
+        establecimiento: canChooseEstablecimiento
+          ? data.establecimiento || null
+          : data.establecimiento || singleEstId || null,
       };
       if (protocol) {
         await pb.collection("activacion_protocolos").update(protocol.id, payload);

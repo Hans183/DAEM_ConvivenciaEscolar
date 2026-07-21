@@ -42,6 +42,9 @@ const YEARS = ["2024", "2025", "2026", "2027"];
 export function ProtocolsTable() {
   const user = useUser();
   const isAdmin = hasRole(user?.role, "admin");
+  const isItinerante = hasRole(user?.role, "itinerante");
+  const isUser = hasRole(user?.role, "user") || hasRole(user?.role, "usuario");
+  const canEdit = isAdmin || isItinerante || isUser;
 
   const [data, setData] = useState<ProtocolActivation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -166,8 +169,8 @@ export function ProtocolsTable() {
   }, [user, fetchData]);
 
   const columns = useMemo(
-    () => getColumns({ onEdit: handleEdit, onDelete: handleDelete, isAdmin }),
-    [isAdmin, handleEdit, handleDelete],
+    () => getColumns({ onEdit: handleEdit, onDelete: handleDelete, isAdmin, canEdit }),
+    [isAdmin, canEdit, handleEdit, handleDelete],
   );
 
   const table = useDataTableInstance({ columns, data });

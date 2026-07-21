@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, Pencil, Trash } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -41,8 +41,14 @@ interface GetColumnsProps {
   onEdit?: (record: ProtocolActivation) => void;
   onDelete?: (record: ProtocolActivation) => void;
   isAdmin?: boolean;
+  canEdit?: boolean;
 }
-export const getColumns = ({ onEdit, onDelete, isAdmin }: GetColumnsProps): ColumnDef<ProtocolActivation>[] => {
+export const getColumns = ({
+  onEdit,
+  onDelete,
+  isAdmin,
+  canEdit,
+}: GetColumnsProps): ColumnDef<ProtocolActivation>[] => {
   const cols: ColumnDef<ProtocolActivation>[] = [
     {
       id: "select",
@@ -135,13 +141,17 @@ export const getColumns = ({ onEdit, onDelete, isAdmin }: GetColumnsProps): Colu
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-              {isAdmin && onEdit && onDelete && (
-                <>
-                  <DropdownMenuItem onClick={() => onEdit(item)}>Editar</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onDelete(item)} className="text-red-600 focus:text-red-600">
-                    Eliminar
-                  </DropdownMenuItem>
-                </>
+              {canEdit && onEdit && (
+                <DropdownMenuItem onClick={() => onEdit(item)}>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Editar
+                </DropdownMenuItem>
+              )}
+              {isAdmin && onDelete && (
+                <DropdownMenuItem onClick={() => onDelete(item)} className="text-red-600 focus:text-red-600">
+                  <Trash className="mr-2 h-4 w-4" />
+                  Eliminar
+                </DropdownMenuItem>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
