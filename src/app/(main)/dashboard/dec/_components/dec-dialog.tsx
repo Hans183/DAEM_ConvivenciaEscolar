@@ -20,7 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { getFriendlyErrorMessage } from "@/lib/pb-error-handler";
 import { hasRole } from "@/lib/roles";
 import { pb } from "@/lib/pocketbase";
-import { formatRut, validateRut } from "@/lib/rut-utils";
+import { cleanRut, formatRut, validateRut } from "@/lib/rut-utils";
 import { cn, getLocalDatetimeString } from "@/lib/utils";
 
 import type { DecRecord } from "./columns";
@@ -413,6 +413,56 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
     }
   };
 
+  const handleRutBlur = async (rutValue: string) => {
+    if (!rutValue || !validateRut(rutValue)) return;
+    if (record) return; // Solo autocompletar en registros nuevos
+
+    try {
+      const rawDia = form.getValues("dia");
+      const parsedDate = new Date(rawDia);
+      const targetYear = isNaN(parsedDate.getTime()) ? new Date().getFullYear() : parsedDate.getFullYear();
+
+      const startOfYear = `${targetYear}-01-01 00:00:00`;
+      const endOfYear = `${targetYear}-12-31 23:59:59`;
+
+      const cleanedInput = cleanRut(rutValue);
+      const formattedInput = formatRut(rutValue);
+
+      const filterStr = `(rut_estudiante = "${formattedInput}" || rut_estudiante = "${cleanedInput}" || rut_estudiante ~ "${cleanedInput}") && dia >= "${startOfYear}" && dia <= "${endOfYear}"`;
+
+      const records = await pb.collection("DEC").getList(1, 1, {
+        filter: filterStr,
+        sort: "-created",
+      });
+
+      if (records.items && records.items.length > 0) {
+        const match = records.items[0];
+        if (match.nombre_estudiante) {
+          form.setValue("nombre_estudiante", match.nombre_estudiante, { shouldValidate: true });
+        }
+        if (match.edad_estudiante) {
+          form.setValue("edad_estudiante", Number(match.edad_estudiante), { shouldValidate: true });
+        }
+        if (match.curso_estudiante) {
+          form.setValue("curso_estudiante", match.curso_estudiante, { shouldValidate: true });
+        }
+        if (match.profe_jefe_estudiante) {
+          form.setValue("profe_jefe_estudiante", match.profe_jefe_estudiante, { shouldValidate: true });
+        }
+        if (match.nombre_apoderado) {
+          form.setValue("nombre_apoderado", match.nombre_apoderado, { shouldValidate: true });
+        }
+        if (match.fono_apoderado) {
+          form.setValue("fono_apoderado", match.fono_apoderado, { shouldValidate: true });
+        }
+
+        toast.info("Datos del estudiante autocompletados desde su último registro de este año.");
+      }
+    } catch (err) {
+      console.error("Error al buscar registro previo DEC del estudiante:", err);
+    }
+  };
+
   const [step, setStep] = useState(1);
   const totalSteps = 4;
 
@@ -755,19 +805,6 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                       <div className="grid grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
-                          name="nombre_estudiante"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Nombre Estudiante</FormLabel>
-                              <FormControl>
-                                <Input {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
                           name="rut_estudiante"
                           render={({ field }) => (
                             <FormItem>
@@ -786,7 +823,24 @@ export function DecDialog({ open, onOpenChange, record, onSuccess }: DecDialogPr
                                       field.onChange(clean);
                                     }
                                   }}
+                                  onBlur={(e) => {
+                                    field.onBlur();
+                                    handleRutBlur(e.target.value);
+                                  }}
                                 />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="nombre_estudiante"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Nombre Estudiante</FormLabel>
+                              <FormControl>
+                                <Input {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
